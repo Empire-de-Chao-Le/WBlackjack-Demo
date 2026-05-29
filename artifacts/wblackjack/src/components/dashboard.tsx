@@ -203,13 +203,6 @@ export function Dashboard() {
                     </h3>
                   </div>
                   <p className="truncate mt-0.5 text-[14px] text-[#a39daf]">{song.artist}</p>
-                  <p className="text-xs text-muted-foreground/40 mt-1">
-                    Added {new Date(song.dateAdded).toLocaleDateString()}
-                    {song.lastPlayed
-                      ? ` · Played ${new Date(song.lastPlayed).toLocaleDateString()}`
-                      : ""}
-                    {song.timesPlayed > 0 ? ` · ${song.timesPlayed}×` : ""}
-                  </p>
                 </Link>
 
                 <div className="mt-1.5">

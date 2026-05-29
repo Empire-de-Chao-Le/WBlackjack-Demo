@@ -64,6 +64,14 @@ export default function SongPage() {
           </Link>
         </div>
       </div>
+
+      <p className="text-xs text-muted-foreground/40 mt-auto pt-4">
+        Added {new Date(song.dateAdded).toLocaleDateString()}
+        {song.lastPlayed
+          ? ` · Played ${new Date(song.lastPlayed).toLocaleDateString()}`
+          : ""}
+        {song.timesPlayed > 0 ? ` · ${song.timesPlayed}×` : ""}
+      </p>
     </div>
   );
 }
