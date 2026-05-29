@@ -29,3 +29,18 @@ export const isCJK = (char: string) => {
     (code >= 0xAC00 && code <= 0xD7AF)
   );
 };
+
+/**
+ * Unicode-aware tokenizer:
+ * - CJK text → split per character (no spaces between characters)
+ * - All other scripts → extract Unicode word tokens (letters + numbers),
+ *   stripping leading/trailing punctuation so gap words are always clean.
+ *   Hyphenated and apostrophe-joined words are kept as one token (e.g. "don't", "well-known").
+ */
+export function tokenize(text: string): string[] {
+  if ([...text].some((c) => isCJK(c))) {
+    return [...text].filter((c) => c.trim() !== "");
+  }
+  const matches = text.matchAll(/[\p{L}\p{N}]+(?:['\u2019\-][\p{L}\p{N}]+)*/gu);
+  return [...matches].map((m) => m[0]).filter(Boolean);
+}

@@ -10,7 +10,7 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { isCJK } from "@/lib/helpers";
+import { tokenize } from "@/lib/helpers";
 
 type LyricLine = {
   lineIndex: number;
@@ -33,14 +33,6 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-}
-
-function tokenize(text: string): string[] {
-  const chars = text.split("");
-  if (chars.some((c) => isCJK(c))) {
-    return chars.filter((c) => c.trim() !== "");
-  }
-  return text.split(/\s+/).filter(Boolean);
 }
 
 function stripPunct(word: string): string {
@@ -111,9 +103,11 @@ function buildLessons(lyrics: LyricLine[]): Lesson[] {
 function LessonTypeA({
   lesson,
   onContinue,
+  isLast,
 }: {
   lesson: Extract<Lesson, { type: "A" }>;
   onContinue: () => void;
+  isLast: boolean;
 }) {
   const [placed, setPlaced] = useState<string[]>([]);
   const [pool, setPool] = useState<{ word: string; id: number }[]>(
@@ -213,7 +207,7 @@ function LessonTypeA({
           onClick={onContinue}
           data-testid="btn-continue"
         >
-          Continue
+          {isLast ? "Finish" : "Continue"}
         </Button>
       )}
     </div>
@@ -223,9 +217,11 @@ function LessonTypeA({
 function LessonTypeB({
   lesson,
   onContinue,
+  isLast,
 }: {
   lesson: Extract<Lesson, { type: "B" }>;
   onContinue: () => void;
+  isLast: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [wrongFlash, setWrongFlash] = useState<string | null>(null);
@@ -282,7 +278,7 @@ function LessonTypeB({
           onClick={onContinue}
           data-testid="btn-continue"
         >
-          Continue
+          {isLast ? "Finish" : "Continue"}
         </Button>
       )}
     </div>
@@ -362,9 +358,9 @@ export default function ExercisesGame() {
 
       <div className="flex-1 flex flex-col gap-4">
         {currentLesson.type === "A" ? (
-          <LessonTypeA key={key} lesson={currentLesson} onContinue={handleContinue} />
+          <LessonTypeA key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
         ) : (
-          <LessonTypeB key={key} lesson={currentLesson} onContinue={handleContinue} />
+          <LessonTypeB key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
         )}
       </div>
     </div>

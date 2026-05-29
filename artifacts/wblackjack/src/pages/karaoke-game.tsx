@@ -16,7 +16,7 @@ import {
 import { ArrowLeft, ChevronsRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { isCJK } from "@/lib/helpers";
+import { tokenize } from "@/lib/helpers";
 
 type YTPlayer = {
   getCurrentTime: () => number;
@@ -45,14 +45,6 @@ type FilledGap = {
   word: string;
   firstTry: boolean;
 };
-
-function tokenize(text: string): string[] {
-  const chars = text.split("");
-  if (chars.some((c) => isCJK(c))) {
-    return chars.filter((c) => c.trim() !== "");
-  }
-  return text.split(/\s+/).filter(Boolean);
-}
 
 function randBetween(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
