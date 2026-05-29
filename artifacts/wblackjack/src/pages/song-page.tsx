@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { useGetSong, useGetSongLyrics, getGetSongQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mic, Brain } from "lucide-react";
+import { ArrowLeft, Mic, Brain, Pencil } from "lucide-react";
 import { getLanguageFlag } from "@/lib/helpers";
 
 export default function SongPage() {
   const [, params] = useRoute("/song/:id");
+  const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0", 10);
   const { data: song, isLoading } = useGetSong(id, { query: { enabled: !!id, queryKey: getGetSongQueryKey(id) } });
 
@@ -15,10 +16,18 @@ export default function SongPage() {
 
   return (
     <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-8">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" data-testid="link-back">
           <ArrowLeft className="w-6 h-6" />
         </Link>
+        <button
+          onClick={() => setLocation(`/song/${id}/edit`)}
+          className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+          aria-label="Edit song"
+          data-testid="btn-edit-song"
+        >
+          <Pencil className="w-5 h-5" />
+        </button>
       </div>
 
       <div className="text-center space-y-2">

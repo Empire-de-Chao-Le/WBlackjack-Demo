@@ -16,6 +16,7 @@ import {
   useUpsertLyrics,
   useSaveTimestamps,
   getListSongsQueryKey,
+  getGetSongQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -53,6 +54,8 @@ interface Props {
   lines: LyricLineInput[];
   onExit: () => void;
   onSaved: () => void;
+  vocabCsv?: string;
+  existingSongId?: number;
 }
 
 function extractVideoId(url: string): string {
@@ -60,13 +63,10 @@ function extractVideoId(url: string): string {
   return match ? match[1] : url;
 }
 
-export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved }: Props) {
+export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved, vocabCsv, existingSongId }: Props) {
   const queryClient = useQueryClient();
   const playerRef = useRef<YTPlayer | null>(null);
 
-  // currentIdx = index of the UPCOMING line to be stamped on the next tap.
-  // The bright/middle line is lines[currentIdx - 1] (already stamped & currently playing).
-  // At start (currentIdx=0) no line has been stamped → show "···" in the middle slot.
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timestamps, setTimestamps] = useState<
     { lineIndex: number; timestampMs: number }[]
@@ -74,11 +74,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
   const [isSaving, setIsSaving] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  // Holds all recorded timestamps once every line has been stamped,
-  // so "Add to library" can submit them without relying on stale state.
   const finalTimestampsRef = useRef<{ lineIndex: number; timestampMs: number }[]>([]);
-  // Whether playback should resume when the Exit dialog is dismissed (only if the
-  // Exit dialog itself paused it — not if the user had already paused manually).
   const resumeAfterExitRef = useRef(false);
 
   const createSong = useCreateSong();
@@ -115,15 +111,34 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
     if (isSaving) return;
     setIsSaving(true);
     try {
-      const song = await createSong.mutateAsync({
-        data: { artist, title, youtubeUrl, language },
-      });
-      await upsertLyrics.mutateAsync({ id: song.id, data: { lines } });
+      let songId: number;
+      if (existingSongId) {
+        songId = existingSongId;
+      } else {
+        const song = await createSong.mutateAsync({
+          data: { artist, title, youtubeUrl, language },
+        });
+        songId = song.id;
+        await upsertLyrics.mutateAsync({ id: songId, data: { lines } });
+      }
+
       await saveTimestamps.mutateAsync({
-        id: song.id,
+        id: songId,
         data: { timestamps: finalTimestamps },
       });
+
+      if (vocabCsv) {
+        await fetch(`/api/songs/${songId}/vocab/csv`, {
+          method: "POST",
+          body: vocabCsv,
+          headers: { "Content-Type": "text/csv" },
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
+      if (existingSongId) {
+        queryClient.invalidateQueries({ queryKey: getGetSongQueryKey(existingSongId) });
+      }
       onSaved();
     } catch (e) {
       console.error(e);
@@ -145,7 +160,6 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
     const nextIdx = currentIdx + 1;
     setCurrentIdx(nextIdx);
 
-    // Store final timestamps for use by "Add to library" — do NOT auto-save
     if (nextIdx >= lines.length) {
       finalTimestampsRef.current = newTimestamps;
     }
@@ -155,17 +169,11 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
     save(finalTimestampsRef.current);
   };
 
-  // Undo: roll back one line and seek playback to the start of the line that
-  // becomes the new bright/current line. If nothing is left, return to the very
-  // start (time=0, three-dots state).
   const handleUndo = () => {
     if (currentIdx === 0) return;
     finalTimestampsRef.current = [];
     const newIdx = currentIdx - 1;
 
-    // After undo the new bright line is lines[newIdx - 1]; seek to its recorded
-    // start = timestamps[newIdx - 1]. At newIdx === 0 there's no bright line
-    // (3-dots state) → go to the beginning of the song.
     const seekMs = newIdx === 0 ? 0 : (timestamps[newIdx - 1]?.timestampMs ?? 0);
 
     setTimestamps(timestamps.slice(0, newIdx));
@@ -191,8 +199,6 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
     }
   };
 
-  // Opening the Exit dialog pauses playback so everything stops while the
-  // confirmation is shown. If it wasn't already paused, remember to resume on cancel.
   const handleExitClick = () => {
     const player = playerRef.current;
     if (player && !isPaused) {
@@ -207,7 +213,6 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
 
   const handleExitDialogChange = (open: boolean) => {
     setShowExitConfirm(open);
-    // Dialog dismissed (e.g. "Keep syncing") — resume only if we auto-paused.
     if (!open && resumeAfterExitRef.current) {
       playerRef.current?.playVideo();
       setIsPaused(false);
@@ -217,11 +222,9 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
 
   const isDone = currentIdx >= lines.length;
 
-  // Spacebar fires the active primary button
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Space") return;
-      // Don't hijack space inside inputs/textareas
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -239,15 +242,15 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
     return () => window.removeEventListener("keydown", onKey);
   }, [isDone, isSaving, isPaused, showExitConfirm, currentIdx, timestamps]);
 
-  // Display slots:
-  // pastLine    = lines[currentIdx - 2]  (far past, dull)
-  // middleLine  = lines[currentIdx - 1]  (currently playing, bright) — or "···" at start
-  // upcomingLine = lines[currentIdx]     (next to tap, slightly dim)
-  // upcoming2   = lines[currentIdx + 1]  (further ahead, dim)
   const pastLine    = lines[currentIdx - 2]?.original ?? null;
   const middleLine  = currentIdx > 0 ? (lines[currentIdx - 1]?.original ?? null) : null;
   const upcomingLine  = lines[currentIdx]?.original ?? null;
   const upcoming2Line = lines[currentIdx + 1]?.original ?? null;
+
+  const saveButtonLabel = existingSongId ? "Save timestamps" : "Add to library";
+  const exitDialogDescription = existingSongId
+    ? "Your recorded timestamps will be discarded. You'll return to the edit page."
+    : "Your recorded timestamps will be discarded and not saved. You'll return to the Song Lab with your inputs intact.";
 
   return (
     <div className="flex flex-col h-full absolute inset-0 bg-background z-50 p-4 pb-safe max-w-3xl mx-auto">
@@ -323,7 +326,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
             data-testid="btn-add-to-library"
           >
             <Check className="mr-2 w-7 h-7" />
-            {isSaving ? "Saving…" : "Add to library"}
+            {isSaving ? "Saving…" : saveButtonLabel}
           </Button>
         )}
 
@@ -376,8 +379,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
           <AlertDialogHeader>
             <AlertDialogTitle>Exit Sync Tool?</AlertDialogTitle>
             <AlertDialogDescription>
-              Your recorded timestamps will be discarded and not saved. You'll return
-              to the Song Lab with your inputs intact.
+              {exitDialogDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

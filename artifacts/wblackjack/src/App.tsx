@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 
 import Home from "@/pages/home";
 import SongPage from "@/pages/song-page";
+import SongEdit from "@/pages/song-edit";
 import KaraokePicker from "@/pages/karaoke-picker";
 import KaraokeGame from "@/pages/karaoke-game";
 import ExercisesGame from "@/pages/exercises-game";
@@ -17,6 +18,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/song/:id" component={SongPage} />
+      <Route path="/song/:id/edit" component={SongEdit} />
       <Route path="/song/:id/karaoke" component={KaraokePicker} />
       <Route path="/song/:id/karaoke/:difficulty" component={KaraokeGame} />
       <Route path="/song/:id/exercises" component={ExercisesGame} />

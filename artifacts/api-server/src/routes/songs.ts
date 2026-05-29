@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, desc, asc, sql, inArray } from "drizzle-orm";
-import { db, songsTable, lyricsTable, timestampsTable } from "@workspace/db";
+import { db, songsTable, lyricsTable, timestampsTable, vocabTable } from "@workspace/db";
 import {
   ListSongsQueryParams,
   CreateSongBody,
   GetSongParams,
   UpdateSongParams,
-  UpdateSongBody,
+  EditSongBody,
   DeleteSongParams,
   RecordPlayParams,
 } from "@workspace/api-zod";
@@ -204,17 +204,29 @@ router.patch("/songs/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const body = UpdateSongBody.safeParse(req.body);
+  const body = EditSongBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
     return;
   }
 
   const updates: Record<string, unknown> = {};
+  if (body.data.artist !== undefined) updates.artist = body.data.artist;
+  if (body.data.title !== undefined) updates.title = body.data.title;
+  if (body.data.language !== undefined) updates.language = body.data.language;
+  if (body.data.youtubeUrl !== undefined) {
+    updates.youtubeUrl = body.data.youtubeUrl;
+    updates.youtubeThumbnailUrl = deriveThumbnailUrl(body.data.youtubeUrl);
+  }
   if (body.data.status !== undefined) updates.status = body.data.status;
   if (body.data.timesPlayed !== undefined) updates.timesPlayed = body.data.timesPlayed;
   if (body.data.lastPlayed !== undefined)
     updates.lastPlayed = body.data.lastPlayed ? new Date(body.data.lastPlayed) : null;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No updatable fields provided." });
+    return;
+  }
 
   const [song] = await db
     .update(songsTable)
@@ -246,17 +258,29 @@ router.put("/songs/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const body = UpdateSongBody.safeParse(req.body);
+  const body = EditSongBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
     return;
   }
 
   const updates: Record<string, unknown> = {};
+  if (body.data.artist !== undefined) updates.artist = body.data.artist;
+  if (body.data.title !== undefined) updates.title = body.data.title;
+  if (body.data.language !== undefined) updates.language = body.data.language;
+  if (body.data.youtubeUrl !== undefined) {
+    updates.youtubeUrl = body.data.youtubeUrl;
+    updates.youtubeThumbnailUrl = deriveThumbnailUrl(body.data.youtubeUrl);
+  }
   if (body.data.status !== undefined) updates.status = body.data.status;
   if (body.data.timesPlayed !== undefined) updates.timesPlayed = body.data.timesPlayed;
   if (body.data.lastPlayed !== undefined)
     updates.lastPlayed = body.data.lastPlayed ? new Date(body.data.lastPlayed) : null;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No updatable fields provided." });
+    return;
+  }
 
   const [song] = await db
     .update(songsTable)
@@ -288,6 +312,7 @@ router.delete("/songs/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  await db.delete(vocabTable).where(eq(vocabTable.songId, params.data.id));
   await db.delete(lyricsTable).where(eq(lyricsTable.songId, params.data.id));
   await db.delete(timestampsTable).where(eq(timestampsTable.songId, params.data.id));
   const [song] = await db

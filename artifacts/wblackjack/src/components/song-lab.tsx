@@ -102,6 +102,8 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
   const [language, setLanguage] = useState("");
   const [csvData, setCsvData] = useState<string[][]>([]);
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [vocabCsvText, setVocabCsvText] = useState<string | null>(null);
+  const [vocabCsvError, setVocabCsvError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [dupMessage, setDupMessage] = useState<string | null>(null);
 
@@ -135,6 +137,27 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
         setCsvData(rows);
       },
     });
+  };
+
+  const handleVocabUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) { setVocabCsvText(null); return; }
+    setVocabCsvError(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const parsed = Papa.parse<string[]>(text, { header: false, skipEmptyLines: true });
+      const badRow = parsed.data.findIndex((row) => row.length < 2);
+      if (badRow !== -1) {
+        setVocabCsvError(
+          `Row ${badRow + 1} has only ${parsed.data[badRow].length} column(s) — need 2 (phrase, translation).`
+        );
+        setVocabCsvText(null);
+        return;
+      }
+      setVocabCsvText(text);
+    };
+    reader.readAsText(file);
   };
 
   const isValid =
@@ -191,6 +214,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
           setIsSyncing(false);
           onSongAdded?.();
         }}
+        vocabCsv={vocabCsvText ?? undefined}
         lines={csvData.map((row, idx) => ({
           lineIndex: idx,
           original: row[0] ?? "",
@@ -261,6 +285,22 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
             <p className="text-sm text-green-500 mt-1">
               {csvData.length} lines loaded.
             </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Vocab CSV <span className="font-normal text-muted-foreground">(2 cols: phrase, translation) — optional</span></Label>
+          <Input
+            type="file"
+            accept=".csv"
+            onChange={handleVocabUpload}
+            className="cursor-pointer file:text-primary-foreground file:bg-primary file:border-none file:rounded-md file:px-3 file:py-1 file:mr-4 file:cursor-pointer"
+            data-testid="input-vocab-csv"
+          />
+          {vocabCsvError && (
+            <p className="text-sm text-destructive mt-1">{vocabCsvError}</p>
+          )}
+          {!vocabCsvError && vocabCsvText && (
+            <p className="text-sm text-green-500 mt-1">Vocab loaded.</p>
           )}
         </div>
       </div>
