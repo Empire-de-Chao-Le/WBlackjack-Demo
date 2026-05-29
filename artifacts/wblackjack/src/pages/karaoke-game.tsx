@@ -137,9 +137,10 @@ function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
       style={{ verticalAlign: "middle" }}
     >
       <span
-        className={`absolute inset-0 rounded-full border-primary/40 border-t-transparent animate-spin ${cls}`}
+        className={`absolute inset-0 rounded-full border-t-transparent animate-spin ${cls}`}
+        style={{ borderColor: "#8c3cdd #8c3cdd #8c3cdd transparent" }}
       />
-      <span className={`${dotCls} rounded-full bg-primary/40 shrink-0`} />
+      <span className={`${dotCls} rounded-full shrink-0`} style={{ backgroundColor: "#8c3cdd" }} />
     </span>
   );
 }
