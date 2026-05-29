@@ -168,11 +168,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
         )}
 
         {/* Middle — bright currently-playing line, or dots before first tap */}
-        {isDone ? (
-          <p className="text-xl font-bold text-primary text-center">
-            {isSaving ? "Saving…" : "Saved!"}
-          </p>
-        ) : middleLine ? (
+        {middleLine ? (
           <p
             className="text-xl font-bold text-foreground text-center leading-snug"
             style={{ textShadow: "0 0 24px rgba(200,150,255,0.4)" }}
@@ -201,7 +197,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
       </div>
 
       <div className="mt-4 shrink-0">
-        {!isDone && (
+        {!isDone ? (
           <Button
             size="lg"
             className="w-full h-14 text-2xl font-bold bg-primary hover:bg-primary/90 active:scale-[0.97] transition-transform"
@@ -210,7 +206,17 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
             data-testid="btn-tap"
           >
             <Check className="mr-2 w-7 h-7" />
-            {currentIdx === lines.length - 1 ? "Finish" : "Tap!"}
+            Tap!
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            className="w-full h-14 text-2xl font-bold bg-green-500 hover:bg-green-500/90"
+            disabled={isSaving}
+            data-testid="btn-finish"
+          >
+            <Check className="mr-2 w-7 h-7" />
+            {isSaving ? "Saving…" : "Finish"}
           </Button>
         )}
       </div>
