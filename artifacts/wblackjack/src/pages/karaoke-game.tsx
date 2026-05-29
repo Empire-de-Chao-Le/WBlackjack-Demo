@@ -130,11 +130,17 @@ function buildStacks(gaps: Gap[]): string[][] {
 
 function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
   const cls = size === "lg" ? "w-8 h-8 border-4" : "w-5 h-5 border-2";
+  const dotCls = size === "lg" ? "w-1.5 h-1.5" : "w-1 h-1";
   return (
     <span
-      className={`inline-block ${cls} rounded-full border-primary border-t-transparent animate-spin`}
+      className={`inline-flex items-center justify-center relative ${cls === "w-8 h-8 border-4" ? "w-8 h-8" : "w-5 h-5"}`}
       style={{ verticalAlign: "middle" }}
-    />
+    >
+      <span
+        className={`absolute inset-0 rounded-full border-primary/40 border-t-transparent animate-spin ${cls}`}
+      />
+      <span className={`${dotCls} rounded-full bg-primary/40 shrink-0`} />
+    </span>
   );
 }
 
