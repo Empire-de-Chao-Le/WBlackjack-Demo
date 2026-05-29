@@ -79,17 +79,40 @@ function buildGaps(lyrics: LyricLine[], difficulty: number): Gap[] {
   return gaps;
 }
 
-/**
- * Build a 4-slot dock that always contains `currentCorrect` plus 3 decoys
- * drawn randomly from other gap words.
- */
-function buildDock(currentCorrect: string, allGapWords: string[]): string[] {
+/** Build an initial 4-slot dock: correctWord + 3 random decoys, shuffled. */
+function buildInitialDock(currentCorrect: string, allGapWords: string[]): string[] {
   const pool = allGapWords.filter(
     (w) => w.toLowerCase() !== currentCorrect.toLowerCase()
   );
   const decoys = shuffle(pool).slice(0, 3);
   while (decoys.length < 3) decoys.push("***");
   return shuffle([currentCorrect, ...decoys]);
+}
+
+/**
+ * Pick a random decoy that is neither the current correct word nor the word
+ * currently occupying the slot (so the slot always visibly changes).
+ */
+function pickDecoy(
+  correctWord: string,
+  currentSlotWord: string,
+  allGapWords: string[]
+): string {
+  const pool = allGapWords.filter(
+    (w) =>
+      w.toLowerCase() !== correctWord.toLowerCase() &&
+      w.toLowerCase() !== currentSlotWord.toLowerCase()
+  );
+  if (pool.length === 0) {
+    // Fall back: allow same as slot but not the correct word.
+    const fallback = allGapWords.filter(
+      (w) => w.toLowerCase() !== correctWord.toLowerCase()
+    );
+    return fallback.length > 0
+      ? fallback[Math.floor(Math.random() * fallback.length)]
+      : "***";
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
@@ -122,6 +145,10 @@ export default function KaraokeGame() {
   const lineTrackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lyricsScrollRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  // Array index of the last detected active line — used to detect forward advances.
+  const prevActiveArrIdxRef = useRef(0);
+  // Timestamp (ms) to seek to when resuming from a pause.
+  const resumeSeekMsRef = useRef<number | null>(null);
 
   const [playerReady, setPlayerReady] = useState(false);
   const [currentLineIdx, setCurrentLineIdx] = useState(0);
@@ -130,7 +157,7 @@ export default function KaraokeGame() {
   const [dock, setDock] = useState<string[]>(["***", "***", "***", "***"]);
   const [hits, setHits] = useState(0);
   const [fails, setFails] = useState(0);
-  /** lineIndex that caused a pause; null when not paused */
+  /** lineIndex (data-model) of the line that caused a pause; null when not paused */
   const [pausedLineIndex, setPausedLineIndex] = useState<number | null>(null);
 
   const gaps = useMemo(() => {
@@ -148,7 +175,7 @@ export default function KaraokeGame() {
   useEffect(() => {
     if (gaps.length === 0) return;
     const allWords = gaps.map((g) => g.word);
-    setDock(buildDock(gaps[0].word, allWords));
+    setDock(buildInitialDock(gaps[0].word, allWords));
   }, [gaps]);
 
   const extractVideoId = (url: string): string => {
@@ -156,28 +183,21 @@ export default function KaraokeGame() {
     return match ? match[1] : url;
   };
 
-  useEffect(() => {
-    if (!song) return;
-    const existingScript = document.getElementById("yt-api-script");
-    if (window.YT && window.YT.Player) {
-      initPlayer();
+  // ── YouTube player init ──────────────────────────────────────────────────────
+  // Guards against the race where the YT API is already loaded (cached from a
+  // previous page) but the #yt-karaoke-player div hasn't mounted yet.
+  // The retry timeout is stored in a ref so it can be cancelled on unmount.
+  const initRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const initPlayer = useCallback(() => {
+    if (!song || !window.YT?.Player) return;
+    if (playerRef.current) return; // already initialised
+    const el = document.getElementById("yt-karaoke-player");
+    if (!el) {
+      // DOM element not yet mounted — retry on next tick (cancellable).
+      initRetryRef.current = setTimeout(initPlayer, 100);
       return;
     }
-    if (!existingScript) {
-      const tag = document.createElement("script");
-      tag.id = "yt-api-script";
-      tag.src = "https://www.youtube.com/iframe_api";
-      document.head.appendChild(tag);
-    }
-    window.onYouTubeIframeAPIReady = initPlayer;
-    return () => {
-      if (lineTrackIntervalRef.current) clearInterval(lineTrackIntervalRef.current);
-      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-    };
-  }, [song]);
-
-  function initPlayer() {
-    if (!song || !window.YT) return;
     playerRef.current = new window.YT.Player("yt-karaoke-player", {
       videoId: extractVideoId(song.youtubeUrl),
       playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
@@ -186,48 +206,42 @@ export default function KaraokeGame() {
         onStateChange: () => {},
       },
     }) as unknown as YTPlayer;
-  }
+  }, [song]);
 
-  // Track current line and trigger pause when song passes a line with unfilled gaps
   useEffect(() => {
-    if (!playerReady || !lyrics || lyrics.length === 0) return;
-    const timestamps = lyrics.map((l) => ({
-      lineIndex: l.lineIndex,
-      ms: l.timestampMs ?? null,
-    }));
-
-    lineTrackIntervalRef.current = setInterval(() => {
-      const player = playerRef.current;
-      if (!player) return;
-      const currentMs = player.getCurrentTime() * 1000;
-      let activeIdx = 0;
-      for (let i = 0; i < timestamps.length; i++) {
-        const ts = timestamps[i].ms;
-        if (ts !== null && currentMs >= ts) activeIdx = i;
+    if (!song) return;
+    if (window.YT?.Player) {
+      initPlayer();
+    } else {
+      const existing = document.getElementById("yt-api-script");
+      if (!existing) {
+        const tag = document.createElement("script");
+        tag.id = "yt-api-script";
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
       }
-      setCurrentLineIdx(activeIdx);
-
-      const activeLine = lyrics[activeIdx];
-      const nextLine = lyrics[activeIdx + 1];
-      if (!activeLine) return;
-      const nextTs = nextLine?.timestampMs;
-      if (nextTs !== null && nextTs !== undefined && currentMs >= nextTs) {
-        const lineGaps = gaps.filter((g) => g.lineIndex === activeLine.lineIndex);
-        const hasUnfilled = lineGaps.some((g) => !filledGaps.has(g.id));
-        if (hasUnfilled && pausedLineIndex === null) {
-          startFadeAndPause(activeLine.lineIndex, activeLine.timestampMs ?? null);
-        }
-      }
-    }, 200);
-
+      window.onYouTubeIframeAPIReady = initPlayer;
+    }
     return () => {
+      if (initRetryRef.current) clearTimeout(initRetryRef.current);
       if (lineTrackIntervalRef.current) clearInterval(lineTrackIntervalRef.current);
+      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
     };
-  }, [playerReady, lyrics, gaps, filledGaps, pausedLineIndex]);
+  }, [song, initPlayer]);
 
-  function startFadeAndPause(lineIndex: number, seekMs: number | null) {
-    if (fadeIntervalRef.current) return;
-    setPausedLineIndex(lineIndex);
+  // ── Fade, pause & seek back to line start ───────────────────────────────────
+  function startFadeAndPause(
+    lineDataIndex: number,
+    seekMs: number | null,
+    lineArrIdx: number
+  ) {
+    if (fadeIntervalRef.current) return; // already fading
+    setPausedLineIndex(lineDataIndex);
+    // Reset the "previous" pointer so that after seek-back, the tracker
+    // doesn't see a spurious forward jump and retrigger.
+    prevActiveArrIdxRef.current = lineArrIdx;
+    resumeSeekMsRef.current = seekMs;
+
     let vol = 100;
     fadeIntervalRef.current = setInterval(() => {
       vol -= 10;
@@ -247,23 +261,84 @@ export default function KaraokeGame() {
     }, 200);
   }
 
-  // Resume playback when the paused line's gaps are all filled
+  // ── Line-tracking interval ────────────────────────────────────────────────────
+  // Detects when the song advances to a new line and triggers fade+pause if the
+  // line that was just left still has unfilled gaps.
+  useEffect(() => {
+    if (!playerReady || !lyrics || lyrics.length === 0) return;
+
+    const timestamps = lyrics.map((l) => ({
+      lineIndex: l.lineIndex,
+      ms: l.timestampMs ?? null,
+    }));
+
+    lineTrackIntervalRef.current = setInterval(() => {
+      const player = playerRef.current;
+      if (!player) return;
+      const currentMs = player.getCurrentTime() * 1000;
+
+      let activeArrIdx = 0;
+      for (let i = 0; i < timestamps.length; i++) {
+        const ts = timestamps[i].ms;
+        if (ts !== null && currentMs >= ts) activeArrIdx = i;
+      }
+      setCurrentLineIdx(activeArrIdx);
+
+      // Only react to forward advances (not seeks backward).
+      if (activeArrIdx > prevActiveArrIdxRef.current) {
+        const prevArrIdx = prevActiveArrIdxRef.current;
+        prevActiveArrIdxRef.current = activeArrIdx;
+
+        // Check whether the line we just left had unfilled gaps.
+        if (pausedLineIndex === null) {
+          const prevLine = lyrics[prevArrIdx];
+          if (prevLine) {
+            const lineGaps = gaps.filter(
+              (g) => g.lineIndex === prevLine.lineIndex
+            );
+            const hasUnfilled = lineGaps.some((g) => !filledGaps.has(g.id));
+            if (hasUnfilled) {
+              startFadeAndPause(
+                prevLine.lineIndex,
+                prevLine.timestampMs ?? null,
+                prevArrIdx
+              );
+            }
+          }
+        }
+      }
+    }, 200);
+
+    return () => {
+      if (lineTrackIntervalRef.current)
+        clearInterval(lineTrackIntervalRef.current);
+    };
+  }, [playerReady, lyrics, gaps, filledGaps, pausedLineIndex]);
+
+  // ── Resume when the paused line's gaps are all filled ────────────────────────
   useEffect(() => {
     if (pausedLineIndex === null || !playerReady) return;
     const lineGaps = gaps.filter((g) => g.lineIndex === pausedLineIndex);
     if (lineGaps.length === 0) return;
     const allLineFilled = lineGaps.every((g) => filledGaps.has(g.id));
-    if (allLineFilled) {
-      if (fadeIntervalRef.current) {
-        clearInterval(fadeIntervalRef.current);
-        fadeIntervalRef.current = null;
-      }
-      playerRef.current?.setVolume(100);
-      playerRef.current?.playVideo();
-      setPausedLineIndex(null);
+    if (!allLineFilled) return;
+
+    // Cancel any in-flight fade.
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
     }
+    playerRef.current?.setVolume(100);
+    // Seek back to the start of the paused line so it plays from the beginning.
+    if (resumeSeekMsRef.current !== null) {
+      playerRef.current?.seekTo(resumeSeekMsRef.current / 1000, true);
+      resumeSeekMsRef.current = null;
+    }
+    playerRef.current?.playVideo();
+    setPausedLineIndex(null);
   }, [filledGaps, pausedLineIndex, gaps, playerReady]);
 
+  // ── Auto-scroll to current line ───────────────────────────────────────────────
   useEffect(() => {
     const lineEl = lineRefs.current[currentLineIdx];
     if (lineEl && lyricsScrollRef.current) {
@@ -277,13 +352,20 @@ export default function KaraokeGame() {
     if (lineEl) lineEl.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [currentGapIdx, gaps]);
 
+  // ── Dock slot handling ────────────────────────────────────────────────────────
+  // Only the tapped slot changes — the other 3 stay in their positions.
+  // • Correct tap  → that slot gets the NEXT correct word (or "***" if done).
+  // • Wrong tap    → that slot gets a fresh decoy, so the user must look elsewhere.
   const handleSlotClick = useCallback(
     (word: string, slotIdx: number) => {
       if (word === "***" || currentGapIdx === -1) return;
       const targetGap = gaps[currentGapIdx];
       if (!targetGap) return;
 
+      const allWords = gaps.map((g) => g.word);
+
       if (word.trim().toLowerCase() === targetGap.word.trim().toLowerCase()) {
+        // ── Correct ──────────────────────────────────────────────────────────
         const isFirstTry = !filledGaps.has(targetGap.id + "_miss");
         setFilledGaps((prev) => {
           const next = new Map(prev);
@@ -292,19 +374,21 @@ export default function KaraokeGame() {
         });
         if (isFirstTry) setHits((h) => h + 1);
 
-        // Find next unfilled gap index
+        // Next unfilled gap (using current filledGaps snapshot — targetGap not
+        // yet in the Map, so the search starts from currentGapIdx + 1).
         const nextGapIdx = gaps.findIndex(
           (g, i) => i > currentGapIdx && !filledGaps.has(g.id)
         );
 
-        // Rebuild dock: next correct answer + decoys
-        const allWords = gaps.map((g) => g.word);
-        if (nextGapIdx !== -1) {
-          setDock(buildDock(gaps[nextGapIdx].word, allWords));
-        } else {
-          setDock(["***", "***", "***", "***"]);
-        }
+        // Replace only the tapped slot with the next correct word.
+        setDock((prev) => {
+          const next = [...prev];
+          next[slotIdx] =
+            nextGapIdx !== -1 ? gaps[nextGapIdx].word : "***";
+          return next;
+        });
       } else {
+        // ── Wrong ────────────────────────────────────────────────────────────
         setFails((f) => f + 1);
         setFilledGaps((prev) => {
           const next = new Map(prev);
@@ -313,11 +397,20 @@ export default function KaraokeGame() {
         });
         setFlashingSlot(slotIdx);
         setTimeout(() => setFlashingSlot(null), 600);
+
+        // Replace only the tapped slot with a new decoy — guaranteed different
+        // from both the correct answer and the word that was just there.
+        setDock((prev) => {
+          const next = [...prev];
+          next[slotIdx] = pickDecoy(targetGap.word, prev[slotIdx], allWords);
+          return next;
+        });
       }
     },
     [currentGapIdx, gaps, filledGaps]
   );
 
+  // Keyboard shortcuts: 1–4 fire the corresponding dock slot.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
@@ -337,22 +430,25 @@ export default function KaraokeGame() {
 
   if (songLoading || lyricsLoading)
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center text-muted-foreground">
+      <div className="h-[100dvh] flex items-center justify-center text-muted-foreground">
         Loading...
       </div>
     );
   if (!song || !lyrics)
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center text-destructive">
+      <div className="h-[100dvh] flex items-center justify-center text-destructive">
         Song not found
       </div>
     );
 
-  const gapsFilled = filledGaps.size - Array.from(filledGaps.keys()).filter(k => k.endsWith("_miss")).length;
+  const gapsFilled =
+    filledGaps.size -
+    Array.from(filledGaps.keys()).filter((k) => k.endsWith("_miss")).length;
   const totalGaps = gaps.length;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background overflow-hidden max-w-3xl mx-auto w-full">
+    <div className="h-[100dvh] flex flex-col bg-background max-w-3xl mx-auto w-full overflow-hidden">
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex justify-between items-center px-4 py-3 border-b border-border/50 shrink-0">
         <Link
           href={`/song/${id}/karaoke`}
@@ -374,36 +470,45 @@ export default function KaraokeGame() {
         </div>
       </div>
 
-      <div className="w-full bg-black aspect-video shrink-0 relative">
+      {/* ── YouTube player — compact ─────────────────────────────────────── */}
+      <div className="shrink-0 bg-black relative w-full" style={{ height: "min(40vw, 180px)" }}>
         <div id="yt-karaoke-player" className="w-full h-full" />
         {!playerReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black text-muted-foreground">
+          <div className="absolute inset-0 flex items-center justify-center bg-black text-muted-foreground text-sm">
             Loading player...
           </div>
         )}
       </div>
 
+      {/* ── Lyrics scroll — centred ──────────────────────────────────────── */}
       <div
         ref={lyricsScrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-5"
         style={{ scrollBehavior: "smooth" }}
       >
         {lyrics.map((line, lineArrIdx) => {
           const isCurrent = lineArrIdx === currentLineIdx;
           const isPast = lineArrIdx < currentLineIdx;
-          const opacity = isCurrent ? "opacity-100" : isPast ? "opacity-30" : "opacity-40";
+          const opacity = isCurrent
+            ? "opacity-100"
+            : isPast
+            ? "opacity-30"
+            : "opacity-40";
           const scale = isCurrent ? "text-2xl md:text-3xl" : "text-lg";
           const words = tokenize(line.original);
 
           return (
             <div
               key={line.lineIndex}
-              ref={(el) => { lineRefs.current[lineArrIdx] = el; }}
-              className={`${opacity} ${scale} font-bold leading-loose flex flex-wrap gap-x-2 gap-y-3 transition-all duration-500`}
+              ref={(el) => {
+                lineRefs.current[lineArrIdx] = el;
+              }}
+              className={`${opacity} ${scale} font-bold leading-loose flex flex-wrap justify-center gap-x-2 gap-y-3 transition-all duration-500`}
             >
               {words.map((word, wi) => {
                 const gap = gaps.find(
-                  (g) => g.lineIndex === line.lineIndex && g.wordIndex === wi
+                  (g) =>
+                    g.lineIndex === line.lineIndex && g.wordIndex === wi
                 );
                 if (gap) {
                   const filled = filledGaps.get(gap.id);
@@ -411,10 +516,20 @@ export default function KaraokeGame() {
                     return (
                       <span
                         key={wi}
-                        className={`inline-flex items-center ${filled.firstTry ? "text-green-400" : "text-pink-400"}`}
+                        className={`inline-flex items-center ${
+                          filled.firstTry
+                            ? "text-green-400"
+                            : "text-pink-400"
+                        }`}
                       >
                         {filled.word}
-                        <span className={`ml-1 w-2 h-2 rounded-full ${filled.firstTry ? "bg-green-400" : "bg-pink-400"}`} />
+                        <span
+                          className={`ml-1 w-2 h-2 rounded-full ${
+                            filled.firstTry
+                              ? "bg-green-400"
+                              : "bg-pink-400"
+                          }`}
+                        />
                       </span>
                     );
                   }
@@ -431,6 +546,7 @@ export default function KaraokeGame() {
         })}
       </div>
 
+      {/* ── Dock — always pinned to bottom ──────────────────────────────── */}
       <div className="shrink-0 px-4 pb-4 pt-2 border-t border-border/50">
         <div className="flex justify-end mb-2">
           <Button
