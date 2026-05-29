@@ -54,6 +54,11 @@ function buildLessons(lyrics: LyricLine[]): Lesson[] {
   });
   if (eligible.length === 0) return [];
 
+  // Pool of all translations for fallback distractors
+  const allTranslations = eligible
+    .map((l) => l.translation)
+    .filter(Boolean) as string[];
+
   const lessons: Lesson[] = [];
   for (let i = 0; i < 10; i++) {
     const line = eligible[Math.floor(Math.random() * eligible.length)];
@@ -63,15 +68,38 @@ function buildLessons(lyrics: LyricLine[]): Lesson[] {
       const words = tokenize(line.original);
       lessons.push({ type: "A", line, shuffledWords: shuffle(words) });
     } else {
-      const options: string[] = [line.translation];
-      const distractors = [
+      const correct = line.translation;
+      // Collect distractors: use per-line distractors first, then fill from
+      // other lines' translations so there are always exactly 4 distractors.
+      const lineDistractors = [
         line.distractor1,
         line.distractor2,
         line.distractor3,
         line.distractor4,
       ].filter(Boolean) as string[];
-      options.push(...distractors);
-      lessons.push({ type: "B", line, options: shuffle(options) });
+
+      const otherTranslations = shuffle(
+        allTranslations.filter(
+          (t) => t !== correct && !lineDistractors.includes(t)
+        )
+      );
+
+      const distractors = [...lineDistractors];
+      for (const t of otherTranslations) {
+        if (distractors.length >= 4) break;
+        distractors.push(t);
+      }
+      // Pad to exactly 4 if not enough unique translations exist
+      let padIdx = 1;
+      while (distractors.length < 4) {
+        distractors.push(`(option ${++padIdx})`);
+      }
+
+      lessons.push({
+        type: "B",
+        line,
+        options: shuffle([correct, ...distractors.slice(0, 4)]),
+      });
     }
   }
   return lessons;

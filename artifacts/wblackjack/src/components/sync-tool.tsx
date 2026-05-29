@@ -52,13 +52,12 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
   const queryClient = useQueryClient();
   const playerRef = useRef<{ getCurrentTime: () => number } | null>(null);
 
-  // currentIdx: index of the line currently shown in the bright centre position
-  // -1 = before start (showing "···" + line 0)
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timestamps, setTimestamps] = useState<
     { lineIndex: number; timestampMs: number }[]
   >([]);
   const [started, setStarted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const createSong = useCreateSong();
   const upsertLyrics = useUpsertLyrics();
@@ -87,24 +86,8 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     });
   }
 
-  const handleTap = () => {
-    const currentMs =
-      playerRef.current?.getCurrentTime
-        ? playerRef.current.getCurrentTime() * 1000
-        : 0;
-
-    if (!started) {
-      setStarted(true);
-    }
-
-    setTimestamps((prev) => [
-      ...prev,
-      { lineIndex: currentIdx, timestampMs: currentMs },
-    ]);
-    setCurrentIdx((prev) => prev + 1);
-  };
-
-  const handleFinish = async () => {
+  const save = async (finalTimestamps: { lineIndex: number; timestampMs: number }[]) => {
+    setIsSaving(true);
     try {
       const song = await createSong.mutateAsync({
         data: { artist, title, youtubeUrl, language },
@@ -112,19 +95,37 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
       await upsertLyrics.mutateAsync({ id: song.id, data: { lines } });
       await saveTimestamps.mutateAsync({
         id: song.id,
-        data: { timestamps },
+        data: { timestamps: finalTimestamps },
       });
       queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
       setLocation("/");
     } catch (e) {
       console.error(e);
+      setIsSaving(false);
     }
   };
 
-  const isSaving =
-    createSong.isPending ||
-    upsertLyrics.isPending ||
-    saveTimestamps.isPending;
+  const handleTap = () => {
+    const currentMs =
+      playerRef.current?.getCurrentTime
+        ? playerRef.current.getCurrentTime() * 1000
+        : 0;
+
+    if (!started) setStarted(true);
+
+    const newTimestamps = [
+      ...timestamps,
+      { lineIndex: currentIdx, timestampMs: currentMs },
+    ];
+    setTimestamps(newTimestamps);
+    const nextIdx = currentIdx + 1;
+    setCurrentIdx(nextIdx);
+
+    // Last line — trigger save immediately without requiring a second tap
+    if (nextIdx >= lines.length) {
+      save(newTimestamps);
+    }
+  };
 
   const isDone = currentIdx >= lines.length;
 
@@ -166,7 +167,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
           </p>
         ) : (
           <p className="text-2xl font-bold text-primary text-center">
-            All lines tapped!
+            {isSaving ? "Saving…" : "Saved!"}
           </p>
         )}
         {nextLine1 && (
@@ -185,21 +186,12 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
       </div>
 
       <div className="mt-4 shrink-0">
-        {isDone ? (
-          <Button
-            size="lg"
-            className="w-full h-20 text-2xl font-bold bg-primary hover:bg-primary/90 active:scale-[0.98] transition-transform"
-            onClick={handleFinish}
-            disabled={isSaving}
-            data-testid="btn-finish-sync"
-          >
-            {isSaving ? "Saving..." : "Finish"}
-          </Button>
-        ) : (
+        {!isDone && (
           <Button
             size="lg"
             className="w-full h-20 text-2xl font-bold bg-primary hover:bg-primary/90 active:scale-[0.97] transition-transform"
             onClick={handleTap}
+            disabled={isSaving}
             data-testid="btn-tap"
           >
             <Check className="mr-2 w-7 h-7" />

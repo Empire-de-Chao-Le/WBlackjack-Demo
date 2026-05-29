@@ -87,13 +87,17 @@ function buildGaps(lyrics: LyricLine[], difficulty: number): Gap[] {
   return gaps;
 }
 
-function initDock(allGapWords: string[]): { dock: string[]; queue: string[] } {
-  const take = Math.min(4, allGapWords.length);
-  const first4 = allGapWords.slice(0, take);
-  const rest = allGapWords.slice(take);
-  const shuffled = shuffle(first4);
-  while (shuffled.length < 4) shuffled.push("***");
-  return { dock: shuffled, queue: rest };
+/**
+ * Build a 4-slot dock that always contains `currentCorrect` plus 3 decoys
+ * drawn randomly from other gap words.
+ */
+function buildDock(currentCorrect: string, allGapWords: string[]): string[] {
+  const pool = allGapWords.filter(
+    (w) => w.toLowerCase() !== currentCorrect.toLowerCase()
+  );
+  const decoys = shuffle(pool).slice(0, 3);
+  while (decoys.length < 3) decoys.push("***");
+  return shuffle([currentCorrect, ...decoys]);
 }
 
 function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
@@ -129,13 +133,13 @@ export default function KaraokeGame() {
 
   const [playerReady, setPlayerReady] = useState(false);
   const [currentLineIdx, setCurrentLineIdx] = useState(0);
-  const [finished, setFinished] = useState(false);
-  const [hits, setHits] = useState(0);
-  const [fails, setFails] = useState(0);
   const [flashingSlot, setFlashingSlot] = useState<number | null>(null);
   const [filledGaps, setFilledGaps] = useState<Map<string, FilledGap>>(new Map());
   const [dock, setDock] = useState<string[]>(["***", "***", "***", "***"]);
-  const [gapQueue, setGapQueue] = useState<string[]>([]);
+  const [hits, setHits] = useState(0);
+  const [fails, setFails] = useState(0);
+  /** lineIndex that caused a pause; null when not paused */
+  const [pausedLineIndex, setPausedLineIndex] = useState<number | null>(null);
 
   const gaps = useMemo(() => {
     if (!lyrics) return [];
@@ -148,12 +152,11 @@ export default function KaraokeGame() {
 
   const allFilled = gaps.length > 0 && currentGapIdx === -1;
 
+  // Initialise dock when gaps are ready
   useEffect(() => {
     if (gaps.length === 0) return;
     const allWords = gaps.map((g) => g.word);
-    const { dock: initialDock, queue } = initDock(allWords);
-    setDock(initialDock);
-    setGapQueue(queue);
+    setDock(buildDock(gaps[0].word, allWords));
   }, [gaps]);
 
   const extractVideoId = (url: string): string => {
@@ -193,6 +196,7 @@ export default function KaraokeGame() {
     }) as unknown as YTPlayer;
   }
 
+  // Track current line and trigger pause when song passes a line with unfilled gaps
   useEffect(() => {
     if (!playerReady || !lyrics || lyrics.length === 0) return;
     const timestamps = lyrics.map((l) => ({
@@ -217,11 +221,8 @@ export default function KaraokeGame() {
       const nextTs = nextLine?.timestampMs;
       if (nextTs !== null && nextTs !== undefined && currentMs >= nextTs) {
         const lineGaps = gaps.filter((g) => g.lineIndex === activeLine.lineIndex);
-        const hasUnfilled = lineGaps.some(
-          (g) =>
-            !Array.from(filledGaps.keys()).includes(g.id)
-        );
-        if (hasUnfilled) {
+        const hasUnfilled = lineGaps.some((g) => !filledGaps.has(g.id));
+        if (hasUnfilled && pausedLineIndex === null) {
           startFadeAndPause(activeLine.lineIndex, activeLine.timestampMs ?? null);
         }
       }
@@ -230,10 +231,11 @@ export default function KaraokeGame() {
     return () => {
       if (lineTrackIntervalRef.current) clearInterval(lineTrackIntervalRef.current);
     };
-  }, [playerReady, lyrics, gaps, filledGaps]);
+  }, [playerReady, lyrics, gaps, filledGaps, pausedLineIndex]);
 
   function startFadeAndPause(lineIndex: number, seekMs: number | null) {
     if (fadeIntervalRef.current) return;
+    setPausedLineIndex(lineIndex);
     let vol = 100;
     fadeIntervalRef.current = setInterval(() => {
       vol -= 10;
@@ -253,15 +255,22 @@ export default function KaraokeGame() {
     }, 200);
   }
 
+  // Resume playback when the paused line's gaps are all filled
   useEffect(() => {
-    if (!allFilled || !playerReady) return;
-    if (fadeIntervalRef.current) {
-      clearInterval(fadeIntervalRef.current);
-      fadeIntervalRef.current = null;
+    if (pausedLineIndex === null || !playerReady) return;
+    const lineGaps = gaps.filter((g) => g.lineIndex === pausedLineIndex);
+    if (lineGaps.length === 0) return;
+    const allLineFilled = lineGaps.every((g) => filledGaps.has(g.id));
+    if (allLineFilled) {
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+      }
+      playerRef.current?.setVolume(100);
+      playerRef.current?.playVideo();
+      setPausedLineIndex(null);
     }
-    playerRef.current?.setVolume(100);
-    playerRef.current?.playVideo();
-  }, [allFilled, playerReady]);
+  }, [filledGaps, pausedLineIndex, gaps, playerReady]);
 
   useEffect(() => {
     const lineEl = lineRefs.current[currentLineIdx];
@@ -291,31 +300,18 @@ export default function KaraokeGame() {
         });
         if (isFirstTry) setHits((h) => h + 1);
 
-        const nextGapWords = gapQueue.slice(0, 1);
-        const newQueue = gapQueue.slice(1);
-        const newDock = [...dock];
-        if (nextGapWords.length > 0) {
-          newDock[slotIdx] = nextGapWords[0];
-        } else {
-          newDock[slotIdx] = "***";
-        }
+        // Find next unfilled gap index
         const nextGapIdx = gaps.findIndex(
           (g, i) => i > currentGapIdx && !filledGaps.has(g.id)
         );
+
+        // Rebuild dock: next correct answer + decoys
+        const allWords = gaps.map((g) => g.word);
         if (nextGapIdx !== -1) {
-          const nextTarget = gaps[nextGapIdx];
-          const hasTarget = newDock.includes(nextTarget.word);
-          if (!hasTarget && nextTarget.word !== "***") {
-            const emptySlot = newDock.findIndex((d) => d === "***");
-            if (emptySlot !== -1) newDock[emptySlot] = nextTarget.word;
-            else {
-              const randomSlot = Math.floor(Math.random() * 4);
-              newDock[randomSlot] = nextTarget.word;
-            }
-          }
+          setDock(buildDock(gaps[nextGapIdx].word, allWords));
+        } else {
+          setDock(["***", "***", "***", "***"]);
         }
-        setDock(newDock);
-        setGapQueue(newQueue);
       } else {
         setFails((f) => f + 1);
         setFilledGaps((prev) => {
@@ -327,7 +323,7 @@ export default function KaraokeGame() {
         setTimeout(() => setFlashingSlot(null), 600);
       }
     },
-    [currentGapIdx, gaps, filledGaps, dock, gapQueue]
+    [currentGapIdx, gaps, filledGaps]
   );
 
   useEffect(() => {
@@ -457,7 +453,7 @@ export default function KaraokeGame() {
           </Button>
         </div>
 
-        {allFilled || finished ? (
+        {allFilled ? (
           <Button
             className="w-full h-20 text-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
             onClick={handleFinish}

@@ -57,10 +57,11 @@ router.get("/songs", async (req, res): Promise<void> => {
   if (artist) conditions.push(eq(songsTable.artist, artist));
   if (status) conditions.push(eq(songsTable.status, status));
   if (search) {
+    const term = `%${search}%`;
     conditions.push(
       or(
-        ilike(songsTable.title, `%${search}%`),
-        ilike(songsTable.artist, `%${search}%`)
+        sql`unaccent(lower(${songsTable.title})) LIKE unaccent(lower(${term}))`,
+        sql`unaccent(lower(${songsTable.artist})) LIKE unaccent(lower(${term}))`
       )!
     );
   }
@@ -184,6 +185,48 @@ router.get("/songs/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/songs/:id", async (req, res): Promise<void> => {
+  const params = UpdateSongParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const body = UpdateSongBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (body.data.status !== undefined) updates.status = body.data.status;
+  if (body.data.timesPlayed !== undefined) updates.timesPlayed = body.data.timesPlayed;
+  if (body.data.lastPlayed !== undefined)
+    updates.lastPlayed = body.data.lastPlayed ? new Date(body.data.lastPlayed) : null;
+
+  const [song] = await db
+    .update(songsTable)
+    .set(updates)
+    .where(eq(songsTable.id, params.data.id))
+    .returning();
+  if (!song) {
+    res.status(404).json({ error: "Song not found" });
+    return;
+  }
+
+  const [lyricCount] = await db
+    .select({ cnt: sql<number>`count(*)::int` })
+    .from(lyricsTable)
+    .where(eq(lyricsTable.songId, song.id));
+  const [tsCount] = await db
+    .select({ cnt: sql<number>`count(*)::int` })
+    .from(timestampsTable)
+    .where(eq(timestampsTable.songId, song.id));
+
+  res.json(
+    buildSongResponse(song, (lyricCount?.cnt ?? 0) > 0, (tsCount?.cnt ?? 0) > 0)
+  );
+});
+
+router.put("/songs/:id", async (req, res): Promise<void> => {
   const params = UpdateSongParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
