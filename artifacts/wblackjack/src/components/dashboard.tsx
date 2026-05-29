@@ -163,11 +163,9 @@ export function Dashboard() {
           </SelectContent>
         </Select>
       </div>
-
       <p className="text-xs text-muted-foreground px-1">
         {filteredSongs?.length ?? 0} songs
       </p>
-
       <div className="grid grid-cols-1 gap-3">
         {isLoading ? (
           <div className="text-center text-muted-foreground py-8">Loading...</div>
@@ -195,13 +193,13 @@ export function Dashboard() {
                   <div className="flex items-center gap-1.5">
                     <span className="text-base">{getLanguageFlag(song.language)}</span>
                     <h3
-                      className="font-bold text-sm truncate group-hover:text-primary transition-colors"
+                      className="font-bold truncate group-hover:text-primary transition-colors text-[18px]"
                       data-testid={`text-song-title-${song.id}`}
                     >
                       {song.title}
                     </h3>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{song.artist}</p>
+                  <p className="truncate mt-0.5 text-[14px] text-[#a39daf]">{song.artist}</p>
                   <p className="text-xs text-muted-foreground/40 mt-1">
                     Added {new Date(song.dateAdded).toLocaleDateString()}
                     {song.lastPlayed
