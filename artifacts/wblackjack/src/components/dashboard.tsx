@@ -4,6 +4,7 @@ import {
   useListArtists,
   useListLanguages,
   useUpdateSong,
+  useDeleteSong,
   getListSongsQueryKey,
 } from "@workspace/api-client-react";
 import { getLanguageFlag, normalizeString } from "@/lib/helpers";
@@ -27,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X } from "lucide-react";
+import { Search, X, Trash2, AlertTriangle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type SortOption =
@@ -72,6 +73,7 @@ export function Dashboard() {
   });
 
   const updateSong = useUpdateSong();
+  const deleteSong = useDeleteSong();
 
   const filteredSongs = search.trim()
     ? songs?.filter(
@@ -188,25 +190,76 @@ export function Dashboard() {
                 />
               </div>
 
-              <Link href={`/song/${song.id}`} className="flex-1 min-w-0 block">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-base">{getLanguageFlag(song.language)}</span>
-                  <h3
-                    className="font-bold text-sm truncate group-hover:text-primary transition-colors"
-                    data-testid={`text-song-title-${song.id}`}
-                  >
-                    {song.title}
-                  </h3>
+              <div className="flex-1 min-w-0 flex flex-col">
+                <Link href={`/song/${song.id}`} className="block min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">{getLanguageFlag(song.language)}</span>
+                    <h3
+                      className="font-bold text-sm truncate group-hover:text-primary transition-colors"
+                      data-testid={`text-song-title-${song.id}`}
+                    >
+                      {song.title}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{song.artist}</p>
+                  <p className="text-xs text-muted-foreground/40 mt-1">
+                    Added {new Date(song.dateAdded).toLocaleDateString()}
+                    {song.lastPlayed
+                      ? ` · Played ${new Date(song.lastPlayed).toLocaleDateString()}`
+                      : ""}
+                    {song.timesPlayed > 0 ? ` · ${song.timesPlayed}×` : ""}
+                  </p>
+                </Link>
+
+                <div className="mt-1.5">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 hover:text-red-600 transition-colors"
+                        data-testid={`btn-delete-${song.id}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
+                          <AlertTriangle className="h-8 w-8 text-red-600" strokeWidth={2.5} />
+                        </div>
+                        <AlertDialogTitle className="text-center">
+                          Delete "{song.title}"?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-center">
+                          This permanently removes the song, its lyrics, and timestamps
+                          from your library. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          onClick={() => {
+                            deleteSong.mutate(
+                              { id: song.id },
+                              {
+                                onSuccess: () => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: getListSongsQueryKey(),
+                                  });
+                                },
+                              }
+                            );
+                          }}
+                          data-testid={`btn-delete-confirm-${song.id}`}
+                        >
+                          Delete song
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{song.artist}</p>
-                <p className="text-xs text-muted-foreground/40 mt-1">
-                  Added {new Date(song.dateAdded).toLocaleDateString()}
-                  {song.lastPlayed
-                    ? ` · Played ${new Date(song.lastPlayed).toLocaleDateString()}`
-                    : ""}
-                  {song.timesPlayed > 0 ? ` · ${song.timesPlayed}×` : ""}
-                </p>
-              </Link>
+              </div>
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
