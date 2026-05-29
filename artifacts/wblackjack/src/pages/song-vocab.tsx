@@ -43,17 +43,14 @@ export default function SongVocab() {
           )}
         </div>
       </div>
-
       {isLoading && (
         <p className="text-center text-muted-foreground mt-8">Loading…</p>
       )}
-
       {!isLoading && (!vocab || vocab.length === 0) && (
         <p className="text-center text-muted-foreground mt-8">
           No vocab added for this song yet.
         </p>
       )}
-
       {vocab && vocab.length > 0 && (
         <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
           {vocab.map((entry) => (
@@ -61,8 +58,8 @@ export default function SongVocab() {
               key={entry.id}
               className="flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
             >
-              <span className="font-medium text-foreground">{entry.phrase}</span>
-              <span className="text-muted-foreground text-sm text-right ml-6">
+              <span className="font-medium text-foreground text-[18px]">{entry.phrase}</span>
+              <span className="text-muted-foreground text-right ml-6 text-[17px]">
                 {entry.translation}
               </span>
             </div>
