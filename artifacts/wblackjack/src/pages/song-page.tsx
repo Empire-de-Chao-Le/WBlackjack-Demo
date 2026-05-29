@@ -15,7 +15,7 @@ export default function SongPage() {
   if (!song) return <div className="p-8 text-center text-destructive">Song not found.</div>;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-8">
+    <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-4">
       <div className="flex items-center justify-between">
         <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" data-testid="link-back">
           <ArrowLeft className="w-6 h-6" />
@@ -31,12 +31,12 @@ export default function SongPage() {
       </div>
 
       <div className="text-center space-y-2">
-        <div className="text-6xl mb-4">{getLanguageFlag(song.language)}</div>
+        <div className="text-6xl mb-2">{getLanguageFlag(song.language)}</div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground" data-testid="text-song-title">{song.title}</h1>
         <p className="text-xl text-muted-foreground">{song.artist}</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 mt-8">
+      <div className="grid grid-cols-1 gap-4 mt-4">
         <Link href={`/song/${song.id}/karaoke`} className="block">
           <Button size="lg" className="w-full h-24 text-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-karaoke">
             <Mic className="w-6 h-6" />
