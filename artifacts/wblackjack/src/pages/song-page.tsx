@@ -62,7 +62,7 @@ export default function SongPage() {
           </Link>
         </div>
       </div>
-      <p className="mt-auto pt-4 text-[16px] text-[#a39daf]">
+      <p className="text-[16px] text-[#a39daf]">
         Added {new Date(song.dateAdded).toLocaleDateString()}
         {song.lastPlayed
           ? ` · Played ${new Date(song.lastPlayed).toLocaleDateString()}`
