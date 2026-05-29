@@ -18,6 +18,7 @@ declare global {
         opts: object
       ) => {
         getCurrentTime: () => number;
+        playVideo: () => void;
       };
     };
     onYouTubeIframeAPIReady: () => void;
@@ -50,13 +51,15 @@ function extractVideoId(url: string): string {
 export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const playerRef = useRef<{ getCurrentTime: () => number } | null>(null);
+  const playerRef = useRef<{ getCurrentTime: () => number; playVideo: () => void } | null>(null);
 
+  // currentIdx = index of the UPCOMING line to be stamped on the next tap.
+  // The bright/middle line is lines[currentIdx - 1] (already stamped & currently playing).
+  // At start (currentIdx=0) no line has been stamped → show "···" in the middle slot.
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timestamps, setTimestamps] = useState<
     { lineIndex: number; timestampMs: number }[]
   >([]);
-  const [started, setStarted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const createSong = useCreateSong();
@@ -82,7 +85,10 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     if (!window.YT) return;
     playerRef.current = new window.YT.Player("yt-sync-player", {
       videoId: extractVideoId(youtubeUrl),
-      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1, autoplay: 1 },
+      events: {
+        onReady: (e: { target: { playVideo: () => void } }) => e.target.playVideo(),
+      },
     });
   }
 
@@ -111,8 +117,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
         ? playerRef.current.getCurrentTime() * 1000
         : 0;
 
-    if (!started) setStarted(true);
-
+    // Stamp the UPCOMING line (currentIdx), then advance so the next one becomes upcoming
     const newTimestamps = [
       ...timestamps,
       { lineIndex: currentIdx, timestampMs: currentMs },
@@ -121,7 +126,6 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     const nextIdx = currentIdx + 1;
     setCurrentIdx(nextIdx);
 
-    // Last line — trigger save immediately without requiring a second tap
     if (nextIdx >= lines.length) {
       save(newTimestamps);
     }
@@ -129,67 +133,78 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
 
   const isDone = currentIdx >= lines.length;
 
-  const prevLine = lines[currentIdx - 1]?.original;
-  const currentLine = lines[currentIdx]?.original;
-  const nextLine1 = lines[currentIdx + 1]?.original;
-  const nextLine2 = lines[currentIdx + 2]?.original;
+  // Display slots:
+  // pastLine    = lines[currentIdx - 2]  (far past, dull)
+  // middleLine  = lines[currentIdx - 1]  (currently playing, bright) — or "···" at start
+  // upcomingLine = lines[currentIdx]     (next to tap, slightly dim)
+  // upcoming2   = lines[currentIdx + 1]  (further ahead, dim)
+  const pastLine    = lines[currentIdx - 2]?.original ?? null;
+  const middleLine  = currentIdx > 0 ? (lines[currentIdx - 1]?.original ?? null) : null;
+  const upcomingLine  = lines[currentIdx]?.original ?? null;
+  const upcoming2Line = lines[currentIdx + 1]?.original ?? null;
 
   return (
     <div className="flex flex-col h-full absolute inset-0 bg-background z-50 p-4 pb-safe max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-3 shrink-0">
         <h2 className="font-bold text-base">Sync Tool</h2>
         <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded font-medium">
-          Preview
+          {currentIdx} / {lines.length} tapped
         </span>
       </div>
 
-      <div className="aspect-video w-full bg-black rounded-xl overflow-hidden mb-4 shrink-0 shadow-xl">
-        <div id="yt-sync-player" className="w-full h-full" />
+      {/* YouTube player — 70% width */}
+      <div className="w-[70%] mx-auto bg-black rounded-xl overflow-hidden mb-4 shrink-0 shadow-xl">
+        <div className="aspect-video">
+          <div id="yt-sync-player" className="w-full h-full" />
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col justify-center px-2 space-y-3 overflow-hidden min-h-0">
-        {!started && !isDone && (
-          <p className="text-3xl text-muted-foreground/40 text-center tracking-widest animate-pulse select-none">
+        {/* Past (far) */}
+        {pastLine && (
+          <p className="text-xl text-muted-foreground/50 text-center truncate">
+            {pastLine}
+          </p>
+        )}
+
+        {/* Middle — bright currently-playing line, or dots before first tap */}
+        {isDone ? (
+          <p className="text-xl font-bold text-primary text-center">
+            {isSaving ? "Saving…" : "Saved!"}
+          </p>
+        ) : middleLine ? (
+          <p
+            className="text-xl font-bold text-foreground text-center leading-snug"
+            style={{ textShadow: "0 0 24px rgba(200,150,255,0.4)" }}
+          >
+            {middleLine}
+          </p>
+        ) : (
+          <p className="text-xl text-muted-foreground/40 text-center tracking-widest animate-pulse select-none">
             ···
           </p>
         )}
-        {prevLine && (
-          <p className="text-lg text-muted-foreground/30 text-center truncate">
-            {prevLine}
+
+        {/* Upcoming — slightly dim, this is what the next tap will stamp */}
+        {upcomingLine && !isDone && (
+          <p className="text-xl text-muted-foreground/50 text-center truncate">
+            {upcomingLine}
           </p>
         )}
-        {!isDone ? (
-          <p
-            className="text-2xl md:text-3xl font-bold text-foreground text-center leading-snug"
-            style={{ textShadow: "0 0 24px rgba(200,150,255,0.3)" }}
-          >
-            {currentLine}
-          </p>
-        ) : (
-          <p className="text-2xl font-bold text-primary text-center">
-            {isSaving ? "Saving…" : "Saved!"}
+
+        {/* Far upcoming */}
+        {upcoming2Line && !isDone && (
+          <p className="text-xl text-muted-foreground/35 text-center truncate">
+            {upcoming2Line}
           </p>
         )}
-        {nextLine1 && (
-          <p className="text-lg text-muted-foreground/30 text-center truncate">
-            {nextLine1}
-          </p>
-        )}
-        {nextLine2 && (
-          <p className="text-base text-muted-foreground/20 text-center truncate">
-            {nextLine2}
-          </p>
-        )}
-        <p className="text-xs text-muted-foreground/40 text-center mt-2">
-          {currentIdx} / {lines.length} tapped
-        </p>
       </div>
 
       <div className="mt-4 shrink-0">
         {!isDone && (
           <Button
             size="lg"
-            className="w-full h-20 text-2xl font-bold bg-primary hover:bg-primary/90 active:scale-[0.97] transition-transform"
+            className="w-full h-14 text-2xl font-bold bg-primary hover:bg-primary/90 active:scale-[0.97] transition-transform"
             onClick={handleTap}
             disabled={isSaving}
             data-testid="btn-tap"
