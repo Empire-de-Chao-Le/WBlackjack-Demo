@@ -310,6 +310,7 @@ function LessonTypeC({ lesson, onContinue, isLast }: {
             );
           })}
         </div>
+        <hr className="border-green-500/40 shrink-0" />
         <div className="flex flex-wrap gap-2">
           {rightItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
