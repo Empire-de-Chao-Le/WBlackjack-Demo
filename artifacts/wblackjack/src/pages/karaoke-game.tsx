@@ -475,7 +475,7 @@ export default function KaraokeGame() {
       </div>
 
       {/* ── YouTube player — compact ─────────────────────────────────────── */}
-      <div className="shrink-0 bg-black relative w-full" style={{ height: "min(40vw, 180px)" }}>
+      <div className="shrink-0 bg-black relative w-full" style={{ height: "min(36vw, 162px)" }}>
         <div id="yt-karaoke-player" className="w-full h-full" />
         {!playerReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-black text-muted-foreground text-sm">
@@ -567,7 +567,7 @@ export default function KaraokeGame() {
 
         {allFilled ? (
           <Button
-            className="w-full h-20 text-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+            className="w-full h-[68px] text-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
             onClick={handleFinish}
             data-testid="btn-finish"
           >
@@ -580,7 +580,7 @@ export default function KaraokeGame() {
               return (
                 <Button
                   key={i}
-                  className={`h-20 text-xl font-bold border-2 transition-all duration-150 flex flex-col items-center justify-center gap-0.5 ${
+                  className={`h-[68px] text-xl font-bold border-2 transition-all duration-150 flex flex-col items-center justify-center gap-0.5 ${
                     flashingSlot === i
                       ? "bg-pink-500/20 border-pink-500 text-pink-400 scale-95"
                       : word === "***"

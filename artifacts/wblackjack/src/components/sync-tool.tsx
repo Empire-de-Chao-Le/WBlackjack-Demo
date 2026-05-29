@@ -261,8 +261,8 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
         </span>
       </div>
 
-      {/* YouTube player — 70% width */}
-      <div className="w-[70%] mx-auto bg-black rounded-xl overflow-hidden mb-4 shrink-0 shadow-xl">
+      {/* YouTube player — 63% width */}
+      <div className="w-[63%] mx-auto bg-black rounded-xl overflow-hidden mb-4 shrink-0 shadow-xl">
         <div className="aspect-video">
           <div id="yt-sync-player" className="w-full h-full" />
         </div>
