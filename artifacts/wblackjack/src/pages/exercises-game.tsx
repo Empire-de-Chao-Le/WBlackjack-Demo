@@ -46,6 +46,24 @@ function stripPunct(word: string): string {
   return word.replace(/[^\p{L}\p{N}]/gu, "");
 }
 
+const LANG_MAP: Record<string, string> = {
+  polish: "pl-PL", french: "fr-FR", spanish: "es-ES", german: "de-DE",
+  italian: "it-IT", portuguese: "pt-PT", russian: "ru-RU", japanese: "ja-JP",
+  chinese: "zh-CN", mandarin: "zh-CN", korean: "ko-KR", dutch: "nl-NL",
+  swedish: "sv-SE", norwegian: "nb-NO", danish: "da-DK", finnish: "fi-FI",
+  czech: "cs-CZ", slovak: "sk-SK", hungarian: "hu-HU", romanian: "ro-RO",
+  turkish: "tr-TR", arabic: "ar-SA", hebrew: "he-IL", ukrainian: "uk-UA",
+  greek: "el-GR", catalan: "ca-ES",
+};
+
+function speak(text: string, langName: string) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = LANG_MAP[langName.toLowerCase()] ?? langName;
+  window.speechSynthesis.speak(utt);
+}
+
 function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
   const eligible = lyrics.filter((l) => tokenize(l.original).length >= 3);
   if (eligible.length === 0) return [];
@@ -116,8 +134,9 @@ function useContinueOnKey(enabled: boolean, onContinue: () => void) {
 
 // ─── Type A: Shuffled Line ────────────────────────────────────────────────────
 
-function LessonTypeA({ lesson, onContinue, isLast }: {
+function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
   lesson: Extract<Lesson, { type: "A" }>;
+  songLanguage: string;
   onContinue: () => void;
   isLast: boolean;
 }) {
@@ -129,6 +148,7 @@ function LessonTypeA({ lesson, onContinue, isLast }: {
   const [flash, setFlash] = useState(false);
   const targetWords = tokenize(lesson.line.original);
   useContinueOnKey(correct, onContinue);
+  useEffect(() => { if (correct) speak(lesson.line.original, songLanguage); }, [correct]);
 
   const handlePickWord = (id: number, word: string) => {
     if (correct) return;
@@ -182,8 +202,9 @@ function LessonTypeA({ lesson, onContinue, isLast }: {
 
 // ─── Type B: Translate ────────────────────────────────────────────────────────
 
-function LessonTypeB({ lesson, onContinue, isLast }: {
+function LessonTypeB({ lesson, songLanguage, onContinue, isLast }: {
   lesson: Extract<Lesson, { type: "B" }>;
+  songLanguage: string;
   onContinue: () => void;
   isLast: boolean;
 }) {
@@ -191,6 +212,7 @@ function LessonTypeB({ lesson, onContinue, isLast }: {
   const [wrongFlash, setWrongFlash] = useState<string | null>(null);
   const correct = selected === lesson.line.translation;
   useContinueOnKey(correct, onContinue);
+  useEffect(() => { speak(lesson.line.original, songLanguage); }, []);
 
   const handleSelect = (option: string) => {
     if (correct) return;
@@ -226,8 +248,9 @@ function LessonTypeB({ lesson, onContinue, isLast }: {
 
 // ─── Type C: Word Cloud ───────────────────────────────────────────────────────
 
-function LessonTypeC({ lesson, onContinue, isLast }: {
+function LessonTypeC({ lesson, songLanguage, onContinue, isLast }: {
   lesson: Extract<Lesson, { type: "C" }>;
+  songLanguage: string;
   onContinue: () => void;
   isLast: boolean;
 }) {
@@ -243,6 +266,7 @@ function LessonTypeC({ lesson, onContinue, isLast }: {
 
   const handleLeftClick = (pos: number) => {
     if (matchedIds.has(leftItems[pos].id)) return;
+    speak(leftItems[pos].phrase, songLanguage);
     setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(false);
   };
 
@@ -389,6 +413,7 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast }: {
     if (correct) return;
     if (stripPunct(opt).toLowerCase() === stripPunct(targetWord).toLowerCase()) {
       setSelected(opt);
+      speak(line.original, songLanguage);
     } else {
       setWrongFlash(opt);
       setTimeout(() => setWrongFlash(null), 600);
@@ -540,11 +565,11 @@ export default function ExercisesGame() {
 
       <div className="flex-1 min-h-0 flex flex-col">
         {currentLesson.type === "A" ? (
-          <LessonTypeA key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
+          <LessonTypeA key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
         ) : currentLesson.type === "B" ? (
-          <LessonTypeB key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
+          <LessonTypeB key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
         ) : currentLesson.type === "C" ? (
-          <LessonTypeC key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
+          <LessonTypeC key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
         ) : (
           <LessonTypeD key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
         )}
