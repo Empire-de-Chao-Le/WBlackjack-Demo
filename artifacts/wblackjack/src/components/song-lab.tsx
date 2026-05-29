@@ -4,7 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Papa from "papaparse";
 import { SyncTool } from "./sync-tool";
-import { useListArtists, useListLanguages } from "@workspace/api-client-react";
+import {
+  useListArtists,
+  useListLanguages,
+  useListSongs,
+} from "@workspace/api-client-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+function extractVideoId(url: string): string {
+  const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11}).*/);
+  return match ? match[1] : url.trim();
+}
 
 function AutocompleteInput({
   value,
@@ -84,9 +103,11 @@ export function SongLab() {
   const [csvData, setCsvData] = useState<string[][]>([]);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [dupMessage, setDupMessage] = useState<string | null>(null);
 
   const { data: artists } = useListArtists();
   const { data: languages } = useListLanguages();
+  const { data: songs, isLoading: songsLoading } = useListSongs({});
 
   const artistSuggestions = (artists ?? []) as string[];
   const languageSuggestions = (languages ?? []) as string[];
@@ -122,7 +143,41 @@ export function SongLab() {
     youtubeUrl.trim() &&
     language.trim() &&
     csvData.length > 0 &&
-    !csvError;
+    !csvError &&
+    !songsLoading;
+
+  const handleStartSync = () => {
+    const existing = (songs ?? []) as {
+      artist: string;
+      title: string;
+      youtubeUrl: string;
+    }[];
+    const newVideoId = extractVideoId(youtubeUrl);
+    const songMatch = existing.find(
+      (s) =>
+        s.artist.trim().toLowerCase() === artist.trim().toLowerCase() &&
+        s.title.trim().toLowerCase() === title.trim().toLowerCase()
+    );
+    const videoMatch = existing.find(
+      (s) => extractVideoId(s.youtubeUrl) === newVideoId
+    );
+
+    if (songMatch || videoMatch) {
+      const parts: string[] = [];
+      if (songMatch) {
+        parts.push(`the song "${artist.trim()} - ${title.trim()}"`);
+      }
+      if (videoMatch) {
+        parts.push(`the video ${youtubeUrl.trim()}`);
+      }
+      setDupMessage(
+        `${parts.join(" / ")} ${parts.length > 1 ? "are" : "is"} already in your library! Add another version?`
+      );
+      return;
+    }
+
+    setIsSyncing(true);
+  };
 
   if (isSyncing) {
     return (
@@ -207,7 +262,7 @@ export function SongLab() {
       </div>
 
       <Button
-        onClick={() => setIsSyncing(true)}
+        onClick={handleStartSync}
         disabled={!isValid}
         size="lg"
         className="w-full mt-4 font-bold"
@@ -215,6 +270,32 @@ export function SongLab() {
       >
         Start Sync
       </Button>
+
+      <AlertDialog
+        open={dupMessage !== null}
+        onOpenChange={(open) => {
+          if (!open) setDupMessage(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Already in your library</AlertDialogTitle>
+            <AlertDialogDescription>{dupMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="btn-dup-no">No</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDupMessage(null);
+                setIsSyncing(true);
+              }}
+              data-testid="btn-dup-yes"
+            >
+              Yes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

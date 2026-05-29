@@ -78,6 +78,9 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
   // Holds all recorded timestamps once every line has been stamped,
   // so "Add to library" can submit them without relying on stale state.
   const finalTimestampsRef = useRef<{ lineIndex: number; timestampMs: number }[]>([]);
+  // Whether playback should resume when the Exit dialog is dismissed (only if the
+  // Exit dialog itself paused it — not if the user had already paused manually).
+  const resumeAfterExitRef = useRef(false);
 
   const createSong = useCreateSong();
   const upsertLyrics = useUpsertLyrics();
@@ -185,6 +188,30 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
     } else {
       player.pauseVideo();
       setIsPaused(true);
+    }
+  };
+
+  // Opening the Exit dialog pauses playback so everything stops while the
+  // confirmation is shown. If it wasn't already paused, remember to resume on cancel.
+  const handleExitClick = () => {
+    const player = playerRef.current;
+    if (player && !isPaused) {
+      player.pauseVideo();
+      setIsPaused(true);
+      resumeAfterExitRef.current = true;
+    } else {
+      resumeAfterExitRef.current = false;
+    }
+    setShowExitConfirm(true);
+  };
+
+  const handleExitDialogChange = (open: boolean) => {
+    setShowExitConfirm(open);
+    // Dialog dismissed (e.g. "Keep syncing") — resume only if we auto-paused.
+    if (!open && resumeAfterExitRef.current) {
+      playerRef.current?.playVideo();
+      setIsPaused(false);
+      resumeAfterExitRef.current = false;
     }
   };
 
@@ -334,7 +361,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
           <Button
             variant="outline"
             className="h-11 font-medium text-destructive hover:text-destructive"
-            onClick={() => setShowExitConfirm(true)}
+            onClick={handleExitClick}
             disabled={isSaving}
             data-testid="btn-exit"
           >
@@ -344,7 +371,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
         </div>
       </div>
 
-      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+      <AlertDialog open={showExitConfirm} onOpenChange={handleExitDialogChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Exit Sync Tool?</AlertDialogTitle>
@@ -358,7 +385,10 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
               Keep syncing
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={onExit}
+              onClick={() => {
+                resumeAfterExitRef.current = false;
+                onExit();
+              }}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               data-testid="btn-exit-confirm"
             >
