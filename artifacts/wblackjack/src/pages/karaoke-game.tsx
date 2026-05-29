@@ -505,7 +505,7 @@ export default function KaraokeGame() {
               ref={(el) => {
                 lineRefs.current[lineArrIdx] = el;
               }}
-              className={`${opacity} ${scale} font-bold leading-tight flex flex-wrap justify-center gap-x-2 gap-y-1 transition-all duration-500`}
+              className={`${opacity} ${scale} font-bold leading-tight flex flex-wrap justify-center gap-x-2 gap-y-0 transition-all duration-500`}
             >
               {words.map((word, wi) => {
                 const gap = gaps.find(
