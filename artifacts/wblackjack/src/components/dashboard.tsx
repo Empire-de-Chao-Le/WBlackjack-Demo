@@ -180,7 +180,10 @@ export function Dashboard() {
               key={song.id}
               className="bg-card rounded-xl overflow-hidden flex items-center p-3 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
             >
-              <div className="w-20 h-14 bg-muted rounded-lg overflow-hidden flex-shrink-0 relative">
+              <div
+                className="w-14 h-14 bg-muted rounded-lg overflow-hidden flex-shrink-0 relative"
+                style={{ border: `1px solid ${progressColor(song.timesPlayed, song.status)}` }}
+              >
                 <img
                   src={`https://img.youtube.com/vi/${extractVideoId(song.youtubeUrl)}/default.jpg`}
                   className="w-full h-full object-cover"
