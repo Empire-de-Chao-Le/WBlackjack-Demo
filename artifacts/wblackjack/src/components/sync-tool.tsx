@@ -66,6 +66,7 @@ function extractVideoId(url: string): string {
 export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved, vocabCsv, existingSongId }: Props) {
   const queryClient = useQueryClient();
   const playerRef = useRef<YTPlayer | null>(null);
+  const initRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timestamps, setTimestamps] = useState<
@@ -81,23 +82,14 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
   const upsertLyrics = useUpsertLyrics();
   const saveTimestamps = useSaveTimestamps();
 
-  useEffect(() => {
-    const existingScript = document.getElementById("yt-sync-script");
-    if (window.YT && window.YT.Player) {
-      initPlayer();
+  function initPlayer() {
+    if (playerRef.current) return;
+    if (!window.YT?.Player) return;
+    const el = document.getElementById("yt-sync-player");
+    if (!el) {
+      initRetryRef.current = setTimeout(initPlayer, 100);
       return;
     }
-    if (!existingScript) {
-      const tag = document.createElement("script");
-      tag.id = "yt-sync-script";
-      tag.src = "https://www.youtube.com/iframe_api";
-      document.head.appendChild(tag);
-    }
-    window.onYouTubeIframeAPIReady = initPlayer;
-  }, []);
-
-  function initPlayer() {
-    if (!window.YT) return;
     playerRef.current = new window.YT.Player("yt-sync-player", {
       videoId: extractVideoId(youtubeUrl),
       playerVars: { playsinline: 1, rel: 0, modestbranding: 1, autoplay: 1 },
@@ -106,6 +98,24 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
       },
     });
   }
+
+  useEffect(() => {
+    const existingScript = document.getElementById("yt-sync-script");
+    if (window.YT && window.YT.Player) {
+      initPlayer();
+    } else {
+      if (!existingScript) {
+        const tag = document.createElement("script");
+        tag.id = "yt-sync-script";
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+      }
+      window.onYouTubeIframeAPIReady = initPlayer;
+    }
+    return () => {
+      if (initRetryRef.current) clearTimeout(initRetryRef.current);
+    };
+  }, []);
 
   const save = async (finalTimestamps: { lineIndex: number; timestampMs: number }[]) => {
     if (isSaving) return;
