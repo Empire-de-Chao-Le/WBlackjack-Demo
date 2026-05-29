@@ -97,7 +97,7 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
 
   return (
     <div className="flex flex-col gap-4" data-testid="dashboard-container">
-      <div className="flex flex-wrap gap-2 items-center bg-card/60 p-2 rounded-xl border border-border/60">
+      <div className="flex flex-wrap gap-2 bg-card/60 p-2 rounded-xl border border-border/60 justify-center items-center">
         <button
           className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
           onClick={() => setSearchOpen((o) => !o)}
