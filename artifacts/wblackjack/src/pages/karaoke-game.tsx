@@ -527,13 +527,6 @@ export default function KaraokeGame() {
                         }`}
                       >
                         {filled.word}
-                        <span
-                          className={`ml-1 w-2 h-2 rounded-full ${
-                            filled.firstTry
-                              ? "bg-green-400"
-                              : "bg-pink-400"
-                          }`}
-                        />
                       </span>
                     );
                   }
