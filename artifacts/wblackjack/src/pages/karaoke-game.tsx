@@ -542,19 +542,6 @@ export default function KaraokeGame() {
       </div>
       {/* ── Dock — always pinned to bottom ──────────────────────────────── */}
       <div className="shrink-0 px-4 pb-safe pt-2 border-t border-border/50">
-        <div className="flex justify-end mb-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground gap-1"
-            onClick={scrollToNextGap}
-            data-testid="btn-next-gap"
-          >
-            <ChevronsRight className="w-4 h-4" />
-            Next gap
-          </Button>
-        </div>
-
         {allFilled ? (
           <Button
             className="w-full h-[68px] text-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
