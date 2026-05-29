@@ -159,10 +159,14 @@ function LessonTypeA({ lesson, onContinue, isLast }: {
     <div className="flex flex-col h-full min-h-0">
       <p className="text-sm text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
       <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-3 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
-        {placed.length === 0 && <span className="text-muted-foreground/40 text-sm">Click words below to place them here</span>}
-        {placed.map((word, i) => (
-          <button key={i} onClick={() => handleRemoveWord(i)} className="px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/40 text-primary font-medium hover:bg-primary/30 transition-colors" data-testid={`placed-word-${i}`}>{word}</button>
-        ))}
+        {correct
+          ? <span className="text-green-400 font-medium text-base">{lesson.line.original}</span>
+          : placed.length === 0
+            ? <span className="text-muted-foreground/40 text-sm">Click words below to place them here</span>
+            : placed.map((word, i) => (
+                <button key={i} onClick={() => handleRemoveWord(i)} className="px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/40 text-white font-medium hover:bg-primary/30 transition-colors" data-testid={`placed-word-${i}`}>{word}</button>
+              ))
+        }
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
         {pool.map(({ word, id }) => (
