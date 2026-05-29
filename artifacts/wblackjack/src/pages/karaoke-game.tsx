@@ -473,7 +473,6 @@ export default function KaraokeGame() {
           </span>
         </div>
       </div>
-
       {/* ── YouTube player — compact ─────────────────────────────────────── */}
       <div className="shrink-0 bg-black relative w-full" style={{ height: "min(36vw, 162px)" }}>
         <div id="yt-karaoke-player" className="w-full h-full" />
@@ -483,7 +482,6 @@ export default function KaraokeGame() {
           </div>
         )}
       </div>
-
       {/* ── Lyrics scroll — centred ──────────────────────────────────────── */}
       <div
         ref={lyricsScrollRef}
@@ -536,13 +534,12 @@ export default function KaraokeGame() {
                     </span>
                   );
                 }
-                return <span key={wi}>{word}</span>;
+                return <span key={wi} className="mt-[2px] mb-[2px] text-[23px]">{word}</span>;
               })}
             </div>
           );
         })}
       </div>
-
       {/* ── Dock — always pinned to bottom ──────────────────────────────── */}
       <div className="shrink-0 px-4 pb-safe pt-2 border-t border-border/50">
         <div className="flex justify-end mb-2">
