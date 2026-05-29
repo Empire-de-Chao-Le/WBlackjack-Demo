@@ -178,7 +178,7 @@ export function Dashboard() {
           filteredSongs?.map((song) => (
             <div
               key={song.id}
-              className="bg-card rounded-xl overflow-hidden flex items-center p-3 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
+              className="bg-card rounded-xl overflow-hidden flex items-center p-2 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
             >
               <div
                 className="w-[62px] h-[62px] bg-muted rounded-lg overflow-hidden flex-shrink-0 relative"
@@ -205,7 +205,7 @@ export function Dashboard() {
                   <p className="truncate mt-0.5 text-[14px] text-[#a39daf]">{song.artist}</p>
                 </Link>
 
-                <div className="mt-1.5">
+                <div className="mt-0.5">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <button
