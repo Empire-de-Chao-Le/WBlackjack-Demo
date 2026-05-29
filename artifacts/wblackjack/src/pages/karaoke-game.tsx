@@ -570,10 +570,11 @@ export default function KaraokeGame() {
           <div className="grid grid-cols-2 gap-3">
             {stacks.map((s, i) => {
               const word = s[0] ?? "***";
+              const numCorner = ["top-1.5 left-2", "top-1.5 right-2", "bottom-1.5 left-2", "bottom-1.5 right-2"][i];
               return (
                 <Button
                   key={i}
-                  className={`h-[68px] text-xl font-bold border-2 transition-all duration-150 flex flex-col items-center justify-center gap-0.5 ${
+                  className={`relative h-[68px] text-xl font-bold border-2 transition-all duration-150 flex items-center justify-center ${
                     flashingSlot === i
                       ? "bg-pink-500/20 border-pink-500 text-pink-400 scale-95"
                       : word === "***"
@@ -584,7 +585,7 @@ export default function KaraokeGame() {
                   data-testid={`btn-word-${i + 1}`}
                   disabled={word === "***"}
                 >
-                  <span className={`text-base font-black tracking-widest ${word === "***" ? "opacity-30" : "opacity-60"}`}>{i + 1}</span>
+                  <span className={`absolute ${numCorner} text-[11px] font-black tracking-widest ${word === "***" ? "opacity-30" : "opacity-60"}`}>{i + 1}</span>
                   <span className="text-xl font-bold leading-none">{word === "***" ? "···" : word}</span>
                 </Button>
               );
