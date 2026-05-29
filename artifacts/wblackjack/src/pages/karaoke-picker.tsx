@@ -17,13 +17,13 @@ export default function KaraokePicker() {
 
       <div className="flex flex-col gap-4 mt-8">
         <Link href={`/song/${id}/karaoke/10`} className="block">
-          <Button size="lg" className="w-full h-24 text-2xl font-bold bg-card hover:bg-muted border border-border" data-testid="btn-diff-10">10%</Button>
+          <Button size="lg" className="w-full h-24 text-2xl font-bold hover:bg-muted border border-border bg-[#8c3cdde6]" data-testid="btn-diff-10">10%</Button>
         </Link>
         <Link href={`/song/${id}/karaoke/33`} className="block">
-          <Button size="lg" className="w-full h-24 text-2xl font-bold bg-card hover:bg-muted border border-border" data-testid="btn-diff-33">33%</Button>
+          <Button size="lg" className="w-full h-24 text-2xl font-bold hover:bg-muted border border-border bg-[#8c3cdde6]" data-testid="btn-diff-33">33%</Button>
         </Link>
         <Link href={`/song/${id}/karaoke/100`} className="block">
-          <Button size="lg" className="w-full h-24 text-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground border border-transparent shadow-lg" data-testid="btn-diff-100">100%</Button>
+          <Button size="lg" className="w-full h-24 text-2xl font-bold hover:bg-primary/90 text-primary-foreground border border-transparent shadow-lg bg-[#8c3cdde6]" data-testid="btn-diff-100">100%</Button>
         </Link>
       </div>
     </div>
