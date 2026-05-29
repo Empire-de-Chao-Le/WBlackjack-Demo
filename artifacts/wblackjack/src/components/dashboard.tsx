@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useListSongs,
   useListArtists,
@@ -54,7 +54,11 @@ function progressColor(timesPlayed: number, status: string): string {
   return `rgb(${r},${g},${b})`;
 }
 
-export function Dashboard() {
+interface DashboardProps {
+  onFilteredSongsChange?: (ids: number[]) => void;
+}
+
+export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -86,6 +90,10 @@ export function Dashboard() {
           )
       )
     : songs;
+
+  useEffect(() => {
+    onFilteredSongsChange?.(filteredSongs?.map((s) => s.id) ?? []);
+  }, [filteredSongs]);
 
   return (
     <div className="flex flex-col gap-4" data-testid="dashboard-container">
