@@ -1,0 +1,1 @@
+- [WBlackjack architecture](wblackjack-arch.md) — full-stack song learning app; key patterns for db schema, API routes, and frontend hooks

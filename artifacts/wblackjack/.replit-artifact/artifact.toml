@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "WBlackjack"
+version = "1.0.0"
+id = "artifacts/wblackjack"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22862
+
+[services.development]
+run = "pnpm --filter @workspace/wblackjack run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/wblackjack", "run", "build" ]
+publicDir = "artifacts/wblackjack/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22862"
+BASE_PATH = "/"

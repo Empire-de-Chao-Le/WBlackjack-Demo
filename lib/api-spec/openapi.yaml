@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: WBlackjack language learning app API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: songs
+    description: Song management
+  - name: lyrics
+    description: Lyrics and timestamps
+  - name: autocomplete
+    description: Autocomplete data
 paths:
   /healthz:
     get:
@@ -24,6 +30,264 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /songs:
+    get:
+      operationId: listSongs
+      tags: [songs]
+      summary: List all songs
+      parameters:
+        - name: language
+          in: query
+          schema: { type: string }
+        - name: artist
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, active, done]
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [date_added_desc, date_added_asc, last_played_desc, last_played_asc, title_asc, title_desc]
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of songs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Song"
+    post:
+      operationId: createSong
+      tags: [songs]
+      summary: Create a new song
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SongInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+
+  /songs/stats:
+    get:
+      operationId: getSongStats
+      tags: [songs]
+      summary: Dashboard statistics
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SongStats"
+
+  /songs/{id}:
+    get:
+      operationId: getSong
+      tags: [songs]
+      summary: Get a song by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Song detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateSong
+      tags: [songs]
+      summary: Update song metadata (status, play count, last played)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SongUpdate"
+      responses:
+        "200":
+          description: Updated song
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteSong
+      tags: [songs]
+      summary: Delete a song
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /songs/{id}/lyrics:
+    get:
+      operationId: getSongLyrics
+      tags: [lyrics]
+      summary: Get all lyrics lines with timestamps for a song
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Lyrics with timestamps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LyricLine"
+        "404":
+          description: Not found
+    post:
+      operationId: upsertLyrics
+      tags: [lyrics]
+      summary: Bulk upsert lyrics for a song (replaces all existing lyrics)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LyricsInput"
+      responses:
+        "200":
+          description: Lyrics saved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LyricLine"
+        "404":
+          description: Song not found
+
+  /songs/{id}/timestamps:
+    post:
+      operationId: saveTimestamps
+      tags: [lyrics]
+      summary: Save all timestamps for a song (replaces existing)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimestampsInput"
+      responses:
+        "200":
+          description: Timestamps saved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimestampEntry"
+        "404":
+          description: Song not found
+
+  /songs/{id}/play:
+    post:
+      operationId: recordPlay
+      tags: [songs]
+      summary: Record a play session (increments times_played, updates last_played)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Updated song
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "404":
+          description: Not found
+
+  /artists:
+    get:
+      operationId: listArtists
+      tags: [autocomplete]
+      summary: List distinct artist names for autocomplete
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Artist list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /languages:
+    get:
+      operationId: listLanguages
+      tags: [autocomplete]
+      summary: List distinct language names for autocomplete
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Language list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +298,154 @@ components:
       required:
         - status
 
+    Song:
+      type: object
+      required: [id, artist, title, youtubeUrl, language, status, timesPlayed, dateAdded]
+      properties:
+        id:
+          type: integer
+        artist:
+          type: string
+        title:
+          type: string
+        youtubeUrl:
+          type: string
+        language:
+          type: string
+        status:
+          type: string
+          enum: [new, active, done]
+        timesPlayed:
+          type: integer
+        dateAdded:
+          type: string
+          format: date-time
+        lastPlayed:
+          type: ["string", "null"]
+          format: date-time
+        hasLyrics:
+          type: boolean
+        hasTimestamps:
+          type: boolean
+
+    SongInput:
+      type: object
+      required: [artist, title, youtubeUrl, language]
+      properties:
+        artist:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+        youtubeUrl:
+          type: string
+          minLength: 1
+        language:
+          type: string
+          minLength: 1
+
+    SongUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [new, active, done]
+        timesPlayed:
+          type: integer
+        lastPlayed:
+          type: ["string", "null"]
+          format: date-time
+
+    SongStats:
+      type: object
+      required: [total, byStatus, byLanguage]
+      properties:
+        total:
+          type: integer
+        byStatus:
+          type: object
+          required: [new, active, done]
+          properties:
+            new: { type: integer }
+            active: { type: integer }
+            done: { type: integer }
+        byLanguage:
+          type: array
+          items:
+            type: object
+            required: [language, count]
+            properties:
+              language: { type: string }
+              count: { type: integer }
+
+    LyricLine:
+      type: object
+      required: [id, songId, lineIndex, original, translation]
+      properties:
+        id:
+          type: integer
+        songId:
+          type: integer
+        lineIndex:
+          type: integer
+        original:
+          type: string
+        translation:
+          type: string
+        distractor1:
+          type: ["string", "null"]
+        distractor2:
+          type: ["string", "null"]
+        distractor3:
+          type: ["string", "null"]
+        distractor4:
+          type: ["string", "null"]
+        timestampMs:
+          type: ["integer", "null"]
+
+    LyricLineInput:
+      type: object
+      required: [lineIndex, original, translation]
+      properties:
+        lineIndex:
+          type: integer
+        original:
+          type: string
+        translation:
+          type: string
+        distractor1:
+          type: ["string", "null"]
+        distractor2:
+          type: ["string", "null"]
+        distractor3:
+          type: ["string", "null"]
+        distractor4:
+          type: ["string", "null"]
+
+    LyricsInput:
+      type: object
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/LyricLineInput"
+
+    TimestampEntry:
+      type: object
+      required: [lineIndex, timestampMs]
+      properties:
+        lineIndex:
+          type: integer
+        timestampMs:
+          type: integer
+
+    TimestampsInput:
+      type: object
+      required: [timestamps]
+      properties:
+        timestamps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimestampEntry"
