@@ -44,7 +44,7 @@ export default function SongPage() {
           </Button>
         </Link>
         <Link href={`/song/${song.id}/exercises`} className="block">
-          <Button size="lg" className="w-full h-24 text-xl bg-secondary hover:bg-secondary/80 text-secondary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-exercises">
+          <Button size="lg" className="w-full h-24 text-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-exercises">
             <Brain className="w-6 h-6" />
             Exercises
           </Button>
