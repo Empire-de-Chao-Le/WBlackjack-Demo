@@ -220,8 +220,8 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 hover:text-red-600 transition-colors"
                         data-testid={`btn-delete-${song.id}`}
                       >
-                        <Trash2 className="w-3 h-3" />
                         Delete
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
