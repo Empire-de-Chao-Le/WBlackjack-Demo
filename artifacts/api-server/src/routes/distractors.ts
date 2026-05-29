@@ -3,7 +3,11 @@ import OpenAI from "openai";
 
 const router: IRouter = Router();
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// DeepSeek is OpenAI-compatible — just swap the base URL and model
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://api.deepseek.com",
+});
 
 router.post("/songs/distractors", async (req, res): Promise<void> => {
   const { word, line, language } = req.body as {
@@ -33,13 +37,13 @@ Rules:
 - All 5 must be in ${lang} (the same language as the target word)
 - None may be the correct answer ("${word}")
 - Each must be clearly distinct from the others
-- Return ONLY a JSON array of exactly 5 strings, no explanations, no markdown
+- Return ONLY a JSON array of exactly 5 strings, no explanations, no markdown fences
 
 Example output format: ["word1","word2","word3","word4","word5"]`;
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "deepseek-chat",
       max_tokens: 200,
       messages: [{ role: "user", content: prompt }],
       temperature: 0.8,
@@ -49,14 +53,15 @@ Example output format: ["word1","word2","word3","word4","word5"]`;
 
     let distractors: string[] = [];
     try {
-      const parsed = JSON.parse(raw);
+      // Strip markdown fences if model wraps output anyway
+      const cleaned = raw.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
       if (Array.isArray(parsed)) {
         distractors = parsed
           .filter((d): d is string => typeof d === "string" && d.trim() !== "" && d.toLowerCase() !== word.toLowerCase())
           .slice(0, 5);
       }
     } catch {
-      // fallback: extract quoted strings
       const matches = raw.match(/"([^"]+)"/g);
       if (matches) {
         distractors = matches
