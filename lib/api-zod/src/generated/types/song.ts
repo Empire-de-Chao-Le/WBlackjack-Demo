@@ -12,6 +12,8 @@ export interface Song {
   artist: string;
   title: string;
   youtubeUrl: string;
+  /** @nullable */
+  youtubeThumbnailUrl?: string | null;
   language: string;
   status: SongStatus;
   timesPlayed: number;

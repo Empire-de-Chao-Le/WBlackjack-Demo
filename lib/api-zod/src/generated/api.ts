@@ -33,6 +33,7 @@ export const ListSongsResponseItem = zod.object({
   "artist": zod.string(),
   "title": zod.string(),
   "youtubeUrl": zod.string(),
+  "youtubeThumbnailUrl": zod.string().nullish(),
   "language": zod.string(),
   "status": zod.enum(['new', 'active', 'done']),
   "timesPlayed": zod.number(),
@@ -90,6 +91,7 @@ export const GetSongResponse = zod.object({
   "artist": zod.string(),
   "title": zod.string(),
   "youtubeUrl": zod.string(),
+  "youtubeThumbnailUrl": zod.string().nullish(),
   "language": zod.string(),
   "status": zod.enum(['new', 'active', 'done']),
   "timesPlayed": zod.number(),
@@ -101,7 +103,36 @@ export const GetSongResponse = zod.object({
 
 
 /**
- * @summary Update song metadata (status, play count, last played)
+ * @summary Replace song metadata (full update)
+ */
+export const ReplaceSongParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ReplaceSongBody = zod.object({
+  "status": zod.enum(['new', 'active', 'done']).optional(),
+  "timesPlayed": zod.number().optional(),
+  "lastPlayed": zod.coerce.date().nullish()
+})
+
+export const ReplaceSongResponse = zod.object({
+  "id": zod.number(),
+  "artist": zod.string(),
+  "title": zod.string(),
+  "youtubeUrl": zod.string(),
+  "youtubeThumbnailUrl": zod.string().nullish(),
+  "language": zod.string(),
+  "status": zod.enum(['new', 'active', 'done']),
+  "timesPlayed": zod.number(),
+  "dateAdded": zod.coerce.date(),
+  "lastPlayed": zod.coerce.date().nullish(),
+  "hasLyrics": zod.boolean().optional(),
+  "hasTimestamps": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update song metadata (partial update)
  */
 export const UpdateSongParams = zod.object({
   "id": zod.coerce.number()
@@ -118,6 +149,7 @@ export const UpdateSongResponse = zod.object({
   "artist": zod.string(),
   "title": zod.string(),
   "youtubeUrl": zod.string(),
+  "youtubeThumbnailUrl": zod.string().nullish(),
   "language": zod.string(),
   "status": zod.enum(['new', 'active', 'done']),
   "timesPlayed": zod.number(),
@@ -134,6 +166,28 @@ export const UpdateSongResponse = zod.object({
 export const DeleteSongParams = zod.object({
   "id": zod.coerce.number()
 })
+
+
+/**
+ * @summary Upload a CSV file to replace all lyrics for a song (server-side parsed)
+ */
+export const UploadLyricsCsvParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UploadLyricsCsvResponseItem = zod.object({
+  "id": zod.number(),
+  "songId": zod.number(),
+  "lineIndex": zod.number(),
+  "original": zod.string(),
+  "translation": zod.string(),
+  "distractor1": zod.string().nullish(),
+  "distractor2": zod.string().nullish(),
+  "distractor3": zod.string().nullish(),
+  "distractor4": zod.string().nullish(),
+  "timestampMs": zod.number().nullish()
+})
+export const UploadLyricsCsvResponse = zod.array(UploadLyricsCsvResponseItem)
 
 
 /**
@@ -225,6 +279,7 @@ export const RecordPlayResponse = zod.object({
   "artist": zod.string(),
   "title": zod.string(),
   "youtubeUrl": zod.string(),
+  "youtubeThumbnailUrl": zod.string().nullish(),
   "language": zod.string(),
   "status": zod.enum(['new', 'active', 'done']),
   "timesPlayed": zod.number(),

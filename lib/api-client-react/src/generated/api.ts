@@ -433,6 +433,78 @@ export function useGetSong<TData = Awaited<ReturnType<typeof getSong>>, TError =
 
 
 
+export const getReplaceSongUrl = (id: number,) => {
+
+
+
+
+  return `/api/songs/${id}`
+}
+
+/**
+ * @summary Replace song metadata (full update)
+ */
+export const replaceSong = async (id: number,
+    songUpdate: SongUpdate, options?: RequestInit): Promise<Song> => {
+
+  return customFetch<Song>(getReplaceSongUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      songUpdate,)
+  }
+);}
+
+
+
+
+export const getReplaceSongMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replaceSong>>, TError,{id: number;data: BodyType<SongUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof replaceSong>>, TError,{id: number;data: BodyType<SongUpdate>}, TContext> => {
+
+const mutationKey = ['replaceSong'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof replaceSong>>, {id: number;data: BodyType<SongUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  replaceSong(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReplaceSongMutationResult = NonNullable<Awaited<ReturnType<typeof replaceSong>>>
+    export type ReplaceSongMutationBody = BodyType<SongUpdate>
+    export type ReplaceSongMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace song metadata (full update)
+ */
+export const useReplaceSong = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replaceSong>>, TError,{id: number;data: BodyType<SongUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof replaceSong>>,
+        TError,
+        {id: number;data: BodyType<SongUpdate>},
+        TContext
+      > => {
+      return useMutation(getReplaceSongMutationOptions(options));
+    }
+
 export const getUpdateSongUrl = (id: number,) => {
 
 
@@ -442,7 +514,7 @@ export const getUpdateSongUrl = (id: number,) => {
 }
 
 /**
- * @summary Update song metadata (status, play count, last played)
+ * @summary Update song metadata (partial update)
  */
 export const updateSong = async (id: number,
     songUpdate: SongUpdate, options?: RequestInit): Promise<Song> => {
@@ -492,7 +564,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateSongMutationError = ErrorType<void>
 
     /**
- * @summary Update song metadata (status, play count, last played)
+ * @summary Update song metadata (partial update)
  */
 export const useUpdateSong = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSong>>, TError,{id: number;data: BodyType<SongUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -573,6 +645,78 @@ export const useDeleteSong = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteSongMutationOptions(options));
+    }
+
+export const getUploadLyricsCsvUrl = (id: number,) => {
+
+
+
+
+  return `/api/songs/${id}/lyrics/csv`
+}
+
+/**
+ * @summary Upload a CSV file to replace all lyrics for a song (server-side parsed)
+ */
+export const uploadLyricsCsv = async (id: number,
+    uploadLyricsCsvBody: string, options?: RequestInit): Promise<LyricLine[]> => {
+
+  return customFetch<LyricLine[]>(getUploadLyricsCsvUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'text/csv', ...options?.headers },
+    body: JSON.stringify(
+      uploadLyricsCsvBody,)
+  }
+);}
+
+
+
+
+export const getUploadLyricsCsvMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadLyricsCsv>>, TError,{id: number;data: BodyType<string>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadLyricsCsv>>, TError,{id: number;data: BodyType<string>}, TContext> => {
+
+const mutationKey = ['uploadLyricsCsv'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadLyricsCsv>>, {id: number;data: BodyType<string>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  uploadLyricsCsv(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadLyricsCsvMutationResult = NonNullable<Awaited<ReturnType<typeof uploadLyricsCsv>>>
+    export type UploadLyricsCsvMutationBody = BodyType<string>
+    export type UploadLyricsCsvMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a CSV file to replace all lyrics for a song (server-side parsed)
+ */
+export const useUploadLyricsCsv = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadLyricsCsv>>, TError,{id: number;data: BodyType<string>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadLyricsCsv>>,
+        TError,
+        {id: number;data: BodyType<string>},
+        TContext
+      > => {
+      return useMutation(getUploadLyricsCsvMutationOptions(options));
     }
 
 export const getGetSongLyricsUrl = (id: number,) => {

@@ -7,6 +7,7 @@ export const songsTable = pgTable("songs", {
   artist: text("artist").notNull(),
   title: text("title").notNull(),
   youtubeUrl: text("youtube_url").notNull(),
+  youtubeThumbnailUrl: text("youtube_thumbnail_url"),
   language: text("language").notNull(),
   status: text("status").notNull().default("new"),
   timesPlayed: integer("times_played").notNull().default(0),

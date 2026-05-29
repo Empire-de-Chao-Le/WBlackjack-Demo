@@ -115,10 +115,34 @@ paths:
                 $ref: "#/components/schemas/Song"
         "404":
           description: Not found
+    put:
+      operationId: replaceSong
+      tags: [songs]
+      summary: Replace song metadata (full update)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SongUpdate"
+      responses:
+        "200":
+          description: Updated song
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "404":
+          description: Not found
     patch:
       operationId: updateSong
       tags: [songs]
-      summary: Update song metadata (status, play count, last played)
+      summary: Update song metadata (partial update)
       parameters:
         - name: id
           in: path
@@ -153,6 +177,36 @@ paths:
           description: Deleted
         "404":
           description: Not found
+
+  /songs/{id}/lyrics/csv:
+    post:
+      operationId: uploadLyricsCsv
+      tags: [lyrics]
+      summary: Upload a CSV file to replace all lyrics for a song (server-side parsed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: Lyrics saved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LyricLine"
+        "400":
+          description: Invalid CSV
+        "404":
+          description: Song not found
 
   /songs/{id}/lyrics:
     get:
@@ -310,6 +364,8 @@ components:
           type: string
         youtubeUrl:
           type: string
+        youtubeThumbnailUrl:
+          type: ["string", "null"]
         language:
           type: string
         status:

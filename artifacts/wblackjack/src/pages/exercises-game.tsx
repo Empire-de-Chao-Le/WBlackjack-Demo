@@ -59,13 +59,16 @@ function buildLessons(lyrics: LyricLine[]): Lesson[] {
     .map((l) => l.translation)
     .filter(Boolean) as string[];
 
+  // Enforce exact 5/5 split across 10 lessons
+  const typeAssignment = shuffle([...Array(5).fill("A"), ...Array(5).fill("B")]);
   const lessons: Lesson[] = [];
   for (let i = 0; i < 10; i++) {
     const line = eligible[Math.floor(Math.random() * eligible.length)];
-    const useTypeA = Math.random() < 0.5;
+    const useTypeA = typeAssignment[i] === "A";
 
     if (useTypeA) {
-      const words = tokenize(line.original);
+      // Type A: reconstruct the *translation* from shuffled words
+      const words = tokenize(line.translation);
       lessons.push({ type: "A", line, shuffledWords: shuffle(words) });
     } else {
       const correct = line.translation;
@@ -119,7 +122,8 @@ function LessonTypeA({
   const [correct, setCorrect] = useState(false);
   const [flash, setFlash] = useState(false);
 
-  const targetWords = tokenize(lesson.line.original);
+  // Type A now reconstructs the *translation* (shuffledWords came from translation)
+  const targetWords = tokenize(lesson.line.translation);
 
   const handlePickWord = (id: number, word: string) => {
     if (correct) return;
@@ -156,8 +160,11 @@ function LessonTypeA({
 
   return (
     <div className="flex flex-col gap-6 flex-1">
+      <div className="rounded-xl bg-card border border-border p-4 text-center">
+        <p className="text-2xl font-bold leading-relaxed">{lesson.line.original}</p>
+      </div>
       <p className="text-sm text-muted-foreground text-center">
-        Reconstruct the original line
+        Reconstruct the translation
       </p>
 
       <div

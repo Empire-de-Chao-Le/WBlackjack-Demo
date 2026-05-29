@@ -24,6 +24,18 @@ function extractVideoId(url: string): string | null {
   }
 }
 
+function deriveThumbnailUrl(youtubeUrl: string): string | null {
+  try {
+    const u = new URL(youtubeUrl);
+    let videoId: string | null = null;
+    if (u.hostname.includes("youtu.be")) videoId = u.pathname.slice(1);
+    else if (u.hostname.includes("youtube.com")) videoId = u.searchParams.get("v");
+    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+  } catch {
+    return null;
+  }
+}
+
 function buildSongResponse(
   song: typeof songsTable.$inferSelect,
   hasLyrics: boolean,
@@ -34,6 +46,7 @@ function buildSongResponse(
     artist: song.artist,
     title: song.title,
     youtubeUrl: song.youtubeUrl,
+    youtubeThumbnailUrl: song.youtubeThumbnailUrl ?? deriveThumbnailUrl(song.youtubeUrl),
     language: song.language,
     status: song.status,
     timesPlayed: song.timesPlayed,
@@ -147,6 +160,7 @@ router.post("/songs", async (req, res): Promise<void> => {
       artist: parsed.data.artist,
       title: parsed.data.title,
       youtubeUrl: parsed.data.youtubeUrl,
+      youtubeThumbnailUrl: deriveThumbnailUrl(parsed.data.youtubeUrl),
       language: parsed.data.language,
       status: "new",
       timesPlayed: 0,
