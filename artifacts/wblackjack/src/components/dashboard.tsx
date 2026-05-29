@@ -178,10 +178,10 @@ export function Dashboard() {
           filteredSongs?.map((song) => (
             <div
               key={song.id}
-              className="bg-card rounded-xl overflow-hidden flex items-stretch gap-3 border border-card-border hover:border-primary/40 transition-colors group"
+              className="bg-card rounded-xl overflow-hidden flex items-center p-3 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
             >
               <div
-                className="self-stretch aspect-square bg-muted overflow-hidden flex-shrink-0 relative"
+                className="w-14 h-14 bg-muted rounded-lg overflow-hidden flex-shrink-0 relative"
                 style={{ border: `1px solid ${progressColor(song.timesPlayed, song.status)}` }}
               >
                 <img
@@ -191,7 +191,7 @@ export function Dashboard() {
                 />
               </div>
 
-              <div className="flex-1 min-w-0 flex flex-col py-3">
+              <div className="flex-1 min-w-0 flex flex-col">
                 <Link href={`/song/${song.id}`} className="block min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-base">{getLanguageFlag(song.language)}</span>
@@ -258,7 +258,7 @@ export function Dashboard() {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
-                    className="w-5 h-5 rounded-full border-2 border-border shrink-0 transition-transform hover:scale-110 relative self-center mr-3"
+                    className="w-5 h-5 rounded-full border-2 border-border shrink-0 transition-transform hover:scale-110 relative"
                     style={{
                       backgroundColor: progressColor(song.timesPlayed, song.status),
                     }}
