@@ -451,7 +451,7 @@ export default function KaraokeGame() {
   const totalGaps = gaps.length;
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background max-w-3xl mx-auto w-full overflow-hidden">
+    <div className="h-full flex flex-col bg-background max-w-3xl mx-auto w-full overflow-hidden">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex justify-between items-center px-4 py-3 border-b border-border/50 shrink-0">
         <Link
