@@ -29,13 +29,11 @@ export default function SongPage() {
           <Pencil className="w-5 h-5" />
         </button>
       </div>
-
       <div className="text-center space-y-2">
         <div className="text-6xl mb-2">{getLanguageFlag(song.language)}</div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground" data-testid="text-song-title">{song.title}</h1>
-        <p className="text-xl text-muted-foreground">{song.artist}</p>
+        <p className="text-xl text-[#a39daf]">{song.artist}</p>
       </div>
-
       <div className="grid grid-cols-1 gap-4 mt-4">
         <Link href={`/song/${song.id}/karaoke`} className="block">
           <Button size="lg" className="w-full h-24 text-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-karaoke">
@@ -64,8 +62,7 @@ export default function SongPage() {
           </Link>
         </div>
       </div>
-
-      <p className="text-xs text-muted-foreground/40 mt-auto pt-4">
+      <p className="mt-auto pt-4 text-[16px] text-[#a39daf]">
         Added {new Date(song.dateAdded).toLocaleDateString()}
         {song.lastPlayed
           ? ` · Played ${new Date(song.lastPlayed).toLocaleDateString()}`
