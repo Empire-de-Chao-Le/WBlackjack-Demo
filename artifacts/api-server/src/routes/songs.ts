@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or, desc, asc, sql } from "drizzle-orm";
+import { eq, ilike, or, desc, asc, sql, inArray } from "drizzle-orm";
 import { db, songsTable, lyricsTable, timestampsTable } from "@workspace/db";
 import {
   ListSongsQueryParams,
@@ -107,13 +107,13 @@ router.get("/songs", async (req, res): Promise<void> => {
   const lyricCounts = await db
     .select({ songId: lyricsTable.songId, cnt: sql<number>`count(*)::int` })
     .from(lyricsTable)
-    .where(sql`${lyricsTable.songId} = ANY(ARRAY[${sql.join(songIds.map(id => sql`${id}`), sql`, `)}])`)
+    .where(inArray(lyricsTable.songId, songIds))
     .groupBy(lyricsTable.songId);
 
   const tsCounts = await db
     .select({ songId: timestampsTable.songId, cnt: sql<number>`count(*)::int` })
     .from(timestampsTable)
-    .where(sql`${timestampsTable.songId} = ANY(ARRAY[${sql.join(songIds.map(id => sql`${id}`), sql`, `)}])`)
+    .where(inArray(timestampsTable.songId, songIds))
     .groupBy(timestampsTable.songId);
 
   const lyricMap = new Map(lyricCounts.map((r) => [r.songId, r.cnt]));

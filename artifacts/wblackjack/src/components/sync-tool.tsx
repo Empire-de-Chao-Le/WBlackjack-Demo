@@ -117,7 +117,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
   const handleTap = () => {
     const currentMs =
       playerRef.current?.getCurrentTime
-        ? playerRef.current.getCurrentTime() * 1000
+        ? Math.round(playerRef.current.getCurrentTime() * 1000)
         : 0;
 
     const newTimestamps = [

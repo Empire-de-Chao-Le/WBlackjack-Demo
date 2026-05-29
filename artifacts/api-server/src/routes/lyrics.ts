@@ -234,7 +234,7 @@ router.post("/songs/:id/timestamps", async (req, res): Promise<void> => {
   const rows = body.data.timestamps.map((t) => ({
     songId: params.data.id,
     lineIndex: t.lineIndex,
-    timestampMs: t.timestampMs,
+    timestampMs: Math.round(t.timestampMs),
   }));
 
   const inserted = await db.insert(timestampsTable).values(rows).returning();
