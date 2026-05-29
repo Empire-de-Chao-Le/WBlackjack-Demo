@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useRoute, useLocation } from "wouter";
 import { useGetSong, useGetSongLyrics, getGetSongQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mic, Brain, Pencil } from "lucide-react";
+import { ArrowLeft, Mic, Brain, Pencil, BookOpen, Languages } from "lucide-react";
 import { getLanguageFlag } from "@/lib/helpers";
 
 export default function SongPage() {
@@ -49,6 +49,20 @@ export default function SongPage() {
             Exercises
           </Button>
         </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href={`/song/${song.id}/vocab`} className="block">
+            <Button variant="outline" size="lg" className="w-full h-14 font-medium flex items-center justify-center gap-2" data-testid="btn-vocab">
+              <BookOpen className="w-5 h-5" />
+              Vocab
+            </Button>
+          </Link>
+          <Link href={`/song/${song.id}/translation`} className="block">
+            <Button variant="outline" size="lg" className="w-full h-14 font-medium flex items-center justify-center gap-2" data-testid="btn-translation">
+              <Languages className="w-5 h-5" />
+              Translation
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
