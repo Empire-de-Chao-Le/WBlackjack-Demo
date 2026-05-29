@@ -204,15 +204,15 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <Link href={`/song/${song.id}`} className="block min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-base">{getLanguageFlag(song.language)}</span>
+                    <span className="text-[20px]">{getLanguageFlag(song.language)}</span>
                     <h3
-                      className="font-bold truncate group-hover:text-primary transition-colors text-[18px]"
+                      className="font-bold truncate group-hover:text-primary transition-colors text-[20px]"
                       data-testid={`text-song-title-${song.id}`}
                     >
                       {song.title}
                     </h3>
                   </div>
-                  <p className="truncate mt-0.5 text-[14px] text-[#a39daf]">{song.artist}</p>
+                  <p className="truncate mt-0.5 text-[#a39daf] text-[16px]">{song.artist}</p>
                 </Link>
               </div>
 
