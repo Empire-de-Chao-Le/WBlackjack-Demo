@@ -59,41 +59,23 @@ function buildLessons(lyrics: LyricLine[]): Lesson[] {
     const useTypeA = typeAssignment[i] === "A";
 
     if (useTypeA) {
-      // Type A: reconstruct the *translation* from shuffled words
-      const words = tokenize(line.translation);
+      // Type A: reconstruct the *original* foreign-language line from shuffled words
+      const words = tokenize(line.original);
       lessons.push({ type: "A", line, shuffledWords: shuffle(words) });
     } else {
+      // Type B: correct answer + up to 4 distractors sourced strictly from the CSV row
       const correct = line.translation;
-      // Collect distractors: use per-line distractors first, then fill from
-      // other lines' translations so there are always exactly 4 distractors.
-      const lineDistractors = [
+      const csvDistractors = [
         line.distractor1,
         line.distractor2,
         line.distractor3,
         line.distractor4,
-      ].filter(Boolean) as string[];
-
-      const otherTranslations = shuffle(
-        allTranslations.filter(
-          (t) => t !== correct && !lineDistractors.includes(t)
-        )
-      );
-
-      const distractors = [...lineDistractors];
-      for (const t of otherTranslations) {
-        if (distractors.length >= 4) break;
-        distractors.push(t);
-      }
-      // Pad to exactly 4 if not enough unique translations exist
-      let padIdx = 1;
-      while (distractors.length < 4) {
-        distractors.push(`(option ${++padIdx})`);
-      }
+      ].filter((d): d is string => typeof d === "string" && d.trim() !== "");
 
       lessons.push({
         type: "B",
         line,
-        options: shuffle([correct, ...distractors.slice(0, 4)]),
+        options: shuffle([correct, ...csvDistractors]),
       });
     }
   }
@@ -116,8 +98,8 @@ function LessonTypeA({
   const [correct, setCorrect] = useState(false);
   const [flash, setFlash] = useState(false);
 
-  // Type A now reconstructs the *translation* (shuffledWords came from translation)
-  const targetWords = tokenize(lesson.line.translation);
+  // Type A reconstructs the original foreign-language line
+  const targetWords = tokenize(lesson.line.original);
 
   const handlePickWord = (id: number, word: string) => {
     if (correct) return;
@@ -154,11 +136,8 @@ function LessonTypeA({
 
   return (
     <div className="flex flex-col gap-6 flex-1">
-      <div className="rounded-xl bg-card border border-border p-4 text-center">
-        <p className="text-2xl font-bold leading-relaxed">{lesson.line.original}</p>
-      </div>
       <p className="text-sm text-muted-foreground text-center">
-        Reconstruct the translation
+        Reconstruct the original line
       </p>
 
       <div
