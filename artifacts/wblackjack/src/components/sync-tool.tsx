@@ -61,6 +61,9 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     { lineIndex: number; timestampMs: number }[]
   >([]);
   const [isSaving, setIsSaving] = useState(false);
+  // Holds all recorded timestamps once every line has been stamped,
+  // so "Add to library" can submit them without relying on stale state.
+  const finalTimestampsRef = useRef<{ lineIndex: number; timestampMs: number }[]>([]);
 
   const createSong = useCreateSong();
   const upsertLyrics = useUpsertLyrics();
@@ -117,7 +120,6 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
         ? playerRef.current.getCurrentTime() * 1000
         : 0;
 
-    // Stamp the UPCOMING line (currentIdx), then advance so the next one becomes upcoming
     const newTimestamps = [
       ...timestamps,
       { lineIndex: currentIdx, timestampMs: currentMs },
@@ -126,12 +128,38 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     const nextIdx = currentIdx + 1;
     setCurrentIdx(nextIdx);
 
+    // Store final timestamps for use by "Add to library" — do NOT auto-save
     if (nextIdx >= lines.length) {
-      save(newTimestamps);
+      finalTimestampsRef.current = newTimestamps;
     }
   };
 
+  const handleAddToLibrary = () => {
+    save(finalTimestampsRef.current);
+  };
+
   const isDone = currentIdx >= lines.length;
+
+  // Spacebar fires the active button
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space") return;
+      // Don't hijack space inside inputs/textareas
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+      e.preventDefault();
+      if (!isDone) {
+        handleTap();
+      } else if (!isSaving) {
+        handleAddToLibrary();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isDone, isSaving, currentIdx, timestamps]);
 
   // Display slots:
   // pastLine    = lines[currentIdx - 2]  (far past, dull)
@@ -212,11 +240,12 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
           <Button
             size="lg"
             className="w-full h-14 text-2xl font-bold bg-green-500 hover:bg-green-500/90"
+            onClick={handleAddToLibrary}
             disabled={isSaving}
-            data-testid="btn-finish"
+            data-testid="btn-add-to-library"
           >
             <Check className="mr-2 w-7 h-7" />
-            {isSaving ? "Saving…" : "Finish"}
+            {isSaving ? "Saving…" : "Add to library"}
           </Button>
         )}
       </div>
