@@ -24,7 +24,6 @@ type LyricLine = {
 };
 
 type VocabEntry = { id: number; songId: number; phrase: string; translation: string };
-
 type WordCloudItem = { id: number; phrase: string };
 type WordCloudTranslation = { id: number; translation: string };
 
@@ -53,28 +52,32 @@ function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
   const hasVocab = vocab.length >= 9;
   const typeCount = hasVocab ? 3 : 2;
 
+  // Track which lines have been used per type to avoid duplicates within a session
+  const usedByType: Record<"A" | "B", Set<number>> = { A: new Set(), B: new Set() };
+
+  function pickLine(type: "A" | "B"): LyricLine {
+    const unused = eligible.filter((l) => !usedByType[type].has(l.lineIndex));
+    const pool = unused.length > 0 ? unused : eligible;
+    const line = pool[Math.floor(Math.random() * pool.length)];
+    usedByType[type].add(line.lineIndex);
+    return line;
+  }
+
   const lessons: Lesson[] = [];
   for (let i = 0; i < 10; i++) {
     const pick = Math.floor(Math.random() * typeCount);
 
     if (pick === 0) {
-      // Type A: reconstruct the original foreign-language line
-      const line = eligible[Math.floor(Math.random() * eligible.length)];
-      const words = tokenize(line.original);
-      lessons.push({ type: "A", line, shuffledWords: shuffle(words) });
+      const line = pickLine("A");
+      lessons.push({ type: "A", line, shuffledWords: shuffle(tokenize(line.original)) });
     } else if (pick === 1) {
-      // Type B: choose the correct translation
-      const line = eligible[Math.floor(Math.random() * eligible.length)];
+      const line = pickLine("B");
       const correct = line.translation;
       const csvDistractors = [
-        line.distractor1,
-        line.distractor2,
-        line.distractor3,
-        line.distractor4,
+        line.distractor1, line.distractor2, line.distractor3, line.distractor4,
       ].filter((d): d is string => typeof d === "string" && d.trim() !== "");
       lessons.push({ type: "B", line, options: shuffle([correct, ...csvDistractors]) });
     } else {
-      // Type C: word cloud matching
       const selected = shuffle(vocab).slice(0, 9);
       const leftItems: WordCloudItem[] = selected.map((v) => ({ id: v.id, phrase: v.phrase }));
       const rightItems: WordCloudTranslation[] = shuffle(
@@ -86,12 +89,26 @@ function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
   return lessons;
 }
 
-// ─── Type A ──────────────────────────────────────────────────────────────────
+// ─── Shared: Continue button keyboard hook ────────────────────────────────────
+
+function useContinueOnKey(enabled: boolean, onContinue: () => void) {
+  useEffect(() => {
+    if (!enabled) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        onContinue();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [enabled, onContinue]);
+}
+
+// ─── Type A: Shuffled Line ────────────────────────────────────────────────────
 
 function LessonTypeA({
-  lesson,
-  onContinue,
-  isLast,
+  lesson, onContinue, isLast,
 }: {
   lesson: Extract<Lesson, { type: "A" }>;
   onContinue: () => void;
@@ -105,6 +122,8 @@ function LessonTypeA({
   const [flash, setFlash] = useState(false);
 
   const targetWords = tokenize(lesson.line.original);
+
+  useContinueOnKey(correct, onContinue);
 
   const handlePickWord = (id: number, word: string) => {
     if (correct) return;
@@ -139,14 +158,16 @@ function LessonTypeA({
   };
 
   return (
-    <div className="flex flex-col gap-6 flex-1">
-      <p className="text-sm text-muted-foreground text-center">Reconstruct the original line</p>
+    <div className="flex flex-col h-full min-h-0">
+      <p className="text-sm text-muted-foreground text-center shrink-0 mb-3">
+        Reconstruct the original line
+      </p>
+
+      {/* Answer drop area — fixed height */}
       <div
-        className={`min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors ${
+        className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-3 ${
           correct
-            ? flash
-              ? "border-green-400 bg-green-400/10"
-              : "border-green-400/50 bg-green-400/5"
+            ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5"
             : "border-border bg-card/50"
         }`}
         data-testid="answer-area"
@@ -165,7 +186,12 @@ function LessonTypeA({
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap gap-2 min-h-16 items-start" data-testid="word-pool">
+
+      {/* Scrollable word pool */}
+      <div
+        className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3"
+        data-testid="word-pool"
+      >
         {pool.map(({ word, id }) => (
           <button
             key={id}
@@ -177,25 +203,24 @@ function LessonTypeA({
           </button>
         ))}
       </div>
-      {correct && (
-        <Button
-          className="mt-auto w-full h-16 text-xl font-bold bg-green-500 hover:bg-green-500/90 text-black"
-          onClick={onContinue}
-          data-testid="btn-continue"
-        >
-          {isLast ? "Finish" : "Continue"}
-        </Button>
-      )}
+
+      {/* Continue — always visible */}
+      <Button
+        className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
+        onClick={onContinue}
+        disabled={!correct}
+        data-testid="btn-continue"
+      >
+        {isLast ? "Finish" : "Continue"}
+      </Button>
     </div>
   );
 }
 
-// ─── Type B ──────────────────────────────────────────────────────────────────
+// ─── Type B: Translate ────────────────────────────────────────────────────────
 
 function LessonTypeB({
-  lesson,
-  onContinue,
-  isLast,
+  lesson, onContinue, isLast,
 }: {
   lesson: Extract<Lesson, { type: "B" }>;
   onContinue: () => void;
@@ -206,8 +231,10 @@ function LessonTypeB({
 
   const correct = selected === lesson.line.translation;
 
+  useContinueOnKey(correct, onContinue);
+
   const handleSelect = (option: string) => {
-    if (selected === lesson.line.translation) return;
+    if (correct) return;
     if (option === lesson.line.translation) {
       setSelected(option);
     } else {
@@ -218,12 +245,17 @@ function LessonTypeB({
   };
 
   return (
-    <div className="flex flex-col gap-4 flex-1">
-      <div className="rounded-xl bg-card border border-border p-4 text-center">
+    <div className="flex flex-col h-full min-h-0">
+      {/* Fixed header */}
+      <div className="shrink-0 rounded-xl bg-card border border-border p-4 text-center mb-2">
         <p className="text-2xl font-bold leading-relaxed">{lesson.line.original}</p>
       </div>
-      <p className="text-sm text-muted-foreground text-center">Choose the correct translation</p>
-      <div className="flex flex-col gap-3 flex-1">
+      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">
+        Choose the correct translation
+      </p>
+
+      {/* Scrollable options */}
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 mb-3">
         {lesson.options.map((opt, i) => {
           const isCorrectSelected = opt === lesson.line.translation && selected === opt;
           const isWrong = wrongFlash === opt;
@@ -231,7 +263,7 @@ function LessonTypeB({
             <button
               key={i}
               onClick={() => handleSelect(opt)}
-              className={`w-full min-h-16 px-5 py-3 rounded-xl border-2 text-left text-base font-medium transition-all ${
+              className={`w-full min-h-14 px-5 py-3 rounded-xl border-2 text-left text-base font-medium transition-all ${
                 isCorrectSelected
                   ? "border-green-400 bg-green-400/10 text-green-300"
                   : isWrong
@@ -245,15 +277,16 @@ function LessonTypeB({
           );
         })}
       </div>
-      {correct && (
-        <Button
-          className="w-full h-16 text-xl font-bold bg-green-500 hover:bg-green-500/90 text-black"
-          onClick={onContinue}
-          data-testid="btn-continue"
-        >
-          {isLast ? "Finish" : "Continue"}
-        </Button>
-      )}
+
+      {/* Continue — always visible */}
+      <Button
+        className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
+        onClick={onContinue}
+        disabled={!correct}
+        data-testid="btn-continue"
+      >
+        {isLast ? "Finish" : "Continue"}
+      </Button>
     </div>
   );
 }
@@ -261,9 +294,7 @@ function LessonTypeB({
 // ─── Type C: Word Cloud ───────────────────────────────────────────────────────
 
 function LessonTypeC({
-  lesson,
-  onContinue,
-  isLast,
+  lesson, onContinue, isLast,
 }: {
   lesson: Extract<Lesson, { type: "C" }>;
   onContinue: () => void;
@@ -274,30 +305,14 @@ function LessonTypeC({
   const [selectedLeftPos, setSelectedLeftPos] = useState<number | null>(null);
   const [matchedIds, setMatchedIds] = useState<Set<number>>(new Set());
   const [wrongFlash, setWrongFlash] = useState(false);
-  // keyboard phase: 'left' = waiting for left number, 'right' = waiting for right number
   const [kbPhase, setKbPhase] = useState<"left" | "right">("left");
 
   const allMatched = matchedIds.size === leftItems.length;
 
-  // Use a ref so the keydown handler always reads current state without stale closures
-  const stateRef = useRef({ selectedLeftPos, matchedIds, kbPhase });
-  useEffect(() => {
-    stateRef.current = { selectedLeftPos, matchedIds, kbPhase };
-  });
+  useContinueOnKey(allMatched, onContinue);
 
-  const tryMatch = (leftPos: number, rightPos: number) => {
-    const leftId = leftItems[leftPos].id;
-    const rightId = rightItems[rightPos].id;
-    if (leftId === rightId) {
-      setMatchedIds((prev) => new Set([...prev, leftId]));
-      setSelectedLeftPos(null);
-      setKbPhase("left");
-      setWrongFlash(false);
-    } else {
-      setWrongFlash(true);
-      setTimeout(() => setWrongFlash(false), 600);
-    }
-  };
+  const stateRef = useRef({ selectedLeftPos, matchedIds, kbPhase });
+  useEffect(() => { stateRef.current = { selectedLeftPos, matchedIds, kbPhase }; });
 
   const handleLeftClick = (pos: number) => {
     if (matchedIds.has(leftItems[pos].id)) return;
@@ -309,11 +324,24 @@ function LessonTypeC({
   const handleRightClick = (pos: number) => {
     if (matchedIds.has(rightItems[pos].id)) return;
     if (selectedLeftPos === null) return;
-    tryMatch(selectedLeftPos, pos);
+    const leftId = leftItems[selectedLeftPos].id;
+    const rightId = rightItems[pos].id;
+    if (leftId === rightId) {
+      setMatchedIds((prev) => new Set([...prev, leftId]));
+      setSelectedLeftPos(null);
+      setKbPhase("left");
+      setWrongFlash(false);
+    } else {
+      setWrongFlash(true);
+      setTimeout(() => setWrongFlash(false), 600);
+    }
   };
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      // Space/Enter handled by useContinueOnKey hook
+      if (e.key === " " || e.key === "Enter") return;
+
       const { selectedLeftPos, matchedIds, kbPhase } = stateRef.current;
 
       if (e.key === "Tab") {
@@ -335,9 +363,7 @@ function LessonTypeC({
           setWrongFlash(false);
         }
       } else {
-        // right phase
         if (pos < rightItems.length && !matchedIds.has(rightItems[pos].id) && selectedLeftPos !== null) {
-          // call tryMatch but we need current selectedLeftPos
           const leftId = leftItems[selectedLeftPos].id;
           const rightId = rightItems[pos].id;
           if (leftId === rightId) {
@@ -352,19 +378,19 @@ function LessonTypeC({
         }
       }
     };
-
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [leftItems, rightItems]);
 
   return (
-    <div className="flex flex-col gap-4 flex-1">
-      <p className="text-sm text-muted-foreground text-center">
+    <div className="flex flex-col h-full min-h-0">
+      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">
         Match each word to its translation
         <span className="ml-2 text-xs opacity-60">(click or press 1-9 · Tab · 1-9)</span>
       </p>
 
-      <div className="flex gap-3 flex-1">
+      {/* Scrollable two-column area */}
+      <div className="flex-1 min-h-0 overflow-y-auto flex gap-3 mb-3">
         {/* Left column — TL words */}
         <div className="flex flex-col gap-2 flex-1">
           {leftItems.map((item, pos) => {
@@ -420,8 +446,9 @@ function LessonTypeC({
         </div>
       </div>
 
+      {/* Continue — always visible */}
       <Button
-        className="w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
+        className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
         onClick={onContinue}
         disabled={!allMatched}
         data-testid="btn-continue"
@@ -457,7 +484,6 @@ export default function ExercisesGame() {
   });
 
   const recordPlay = useRecordPlay();
-
   const [lesson, setLesson] = useState(0);
   const [key, setKey] = useState(0);
 
@@ -497,12 +523,13 @@ export default function ExercisesGame() {
 
   const currentLesson = lessons[lesson];
   const badgeLabel =
-    currentLesson.type === "A" ? "Reconstruct" :
+    currentLesson.type === "A" ? "Shuffled Line" :
     currentLesson.type === "B" ? "Translate" : "Match";
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background p-4 max-w-lg mx-auto w-full">
-      <div className="flex justify-between items-center mb-6">
+    <div className="h-[100dvh] flex flex-col bg-background p-4 max-w-lg mx-auto w-full overflow-hidden">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4 shrink-0">
         <Link
           href={`/song/${id}`}
           className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
@@ -518,7 +545,8 @@ export default function ExercisesGame() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col gap-4">
+      {/* Lesson area — takes remaining height, no overflow */}
+      <div className="flex-1 min-h-0 flex flex-col">
         {currentLesson.type === "A" ? (
           <LessonTypeA key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
         ) : currentLesson.type === "B" ? (
