@@ -4,6 +4,7 @@ import songsRouter from "./songs";
 import lyricsRouter from "./lyrics";
 import vocabRouter from "./vocab";
 import autocompleteRouter from "./autocomplete";
+import distractorsRouter from "./distractors";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(songsRouter);
 router.use(lyricsRouter);
 router.use(vocabRouter);
 router.use(autocompleteRouter);
+router.use(distractorsRouter);
 
 export default router;

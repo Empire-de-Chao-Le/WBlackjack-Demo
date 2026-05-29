@@ -8,7 +8,7 @@ import {
   getGetSongLyricsQueryKey,
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { tokenize } from "@/lib/helpers";
@@ -30,7 +30,8 @@ type WordCloudTranslation = { id: number; translation: string };
 type Lesson =
   | { type: "A"; line: LyricLine; shuffledWords: string[] }
   | { type: "B"; line: LyricLine; options: string[] }
-  | { type: "C"; leftItems: WordCloudItem[]; rightItems: WordCloudTranslation[] };
+  | { type: "C"; leftItems: WordCloudItem[]; rightItems: WordCloudTranslation[] }
+  | { type: "D"; line: LyricLine; targetWord: string; blankIndex: number };
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -50,12 +51,13 @@ function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
   if (eligible.length === 0) return [];
 
   const hasVocab = vocab.length >= 9;
-  const typeCount = hasVocab ? 3 : 2;
+  const typeCount = hasVocab ? 4 : 3;
 
-  // Track which lines have been used per type to avoid duplicates within a session
-  const usedByType: Record<"A" | "B", Set<number>> = { A: new Set(), B: new Set() };
+  const usedByType: Record<"A" | "B" | "D", Set<number>> = {
+    A: new Set(), B: new Set(), D: new Set(),
+  };
 
-  function pickLine(type: "A" | "B"): LyricLine {
+  function pickLine(type: "A" | "B" | "D"): LyricLine {
     const unused = eligible.filter((l) => !usedByType[type].has(l.lineIndex));
     const pool = unused.length > 0 ? unused : eligible;
     const line = pool[Math.floor(Math.random() * pool.length)];
@@ -77,19 +79,26 @@ function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
         line.distractor1, line.distractor2, line.distractor3, line.distractor4,
       ].filter((d): d is string => typeof d === "string" && d.trim() !== "");
       lessons.push({ type: "B", line, options: shuffle([correct, ...csvDistractors]) });
-    } else {
+    } else if (pick === 2 && hasVocab) {
       const selected = shuffle(vocab).slice(0, 9);
       const leftItems: WordCloudItem[] = selected.map((v) => ({ id: v.id, phrase: v.phrase }));
       const rightItems: WordCloudTranslation[] = shuffle(
         selected.map((v) => ({ id: v.id, translation: v.translation }))
       );
       lessons.push({ type: "C", leftItems, rightItems });
+    } else {
+      // Type D: missing word
+      const line = pickLine("D");
+      const words = tokenize(line.original);
+      const blankIndex = Math.floor(Math.random() * words.length);
+      const targetWord = words[blankIndex];
+      lessons.push({ type: "D", line, targetWord, blankIndex });
     }
   }
   return lessons;
 }
 
-// ─── Shared: Continue button keyboard hook ────────────────────────────────────
+// ─── Shared: Continue on Space/Enter ─────────────────────────────────────────
 
 function useContinueOnKey(enabled: boolean, onContinue: () => void) {
   useEffect(() => {
@@ -107,9 +116,7 @@ function useContinueOnKey(enabled: boolean, onContinue: () => void) {
 
 // ─── Type A: Shuffled Line ────────────────────────────────────────────────────
 
-function LessonTypeA({
-  lesson, onContinue, isLast,
-}: {
+function LessonTypeA({ lesson, onContinue, isLast }: {
   lesson: Extract<Lesson, { type: "A" }>;
   onContinue: () => void;
   isLast: boolean;
@@ -120,9 +127,7 @@ function LessonTypeA({
   );
   const [correct, setCorrect] = useState(false);
   const [flash, setFlash] = useState(false);
-
   const targetWords = tokenize(lesson.line.original);
-
   useContinueOnKey(correct, onContinue);
 
   const handlePickWord = (id: number, word: string) => {
@@ -132,13 +137,8 @@ function LessonTypeA({
     setPool((prev) => prev.filter((p) => p.id !== id));
     const stripped = newPlaced.map(stripPunct);
     const target = targetWords.map(stripPunct);
-    if (
-      stripped.length === target.length &&
-      stripped.every((w, i) => w.toLowerCase() === target[i].toLowerCase())
-    ) {
-      setCorrect(true);
-      setFlash(true);
-      setTimeout(() => setFlash(false), 600);
+    if (stripped.length === target.length && stripped.every((w, i) => w.toLowerCase() === target[i].toLowerCase())) {
+      setCorrect(true); setFlash(true); setTimeout(() => setFlash(false), 600);
     }
   };
 
@@ -151,66 +151,25 @@ function LessonTypeA({
       return acc;
     }, -1);
     setPool((prev) =>
-      [...prev, { word, id: originalId >= 0 ? originalId : Date.now() }].sort(
-        (a, b) => a.id - b.id
-      )
+      [...prev, { word, id: originalId >= 0 ? originalId : Date.now() }].sort((a, b) => a.id - b.id)
     );
   };
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <p className="text-sm text-muted-foreground text-center shrink-0 mb-3">
-        Reconstruct the original line
-      </p>
-
-      {/* Answer drop area — fixed height */}
-      <div
-        className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-3 ${
-          correct
-            ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5"
-            : "border-border bg-card/50"
-        }`}
-        data-testid="answer-area"
-      >
-        {placed.length === 0 && (
-          <span className="text-muted-foreground/40 text-sm">Click words below to place them here</span>
-        )}
+      <p className="text-sm text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
+      <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-3 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
+        {placed.length === 0 && <span className="text-muted-foreground/40 text-sm">Click words below to place them here</span>}
         {placed.map((word, i) => (
-          <button
-            key={i}
-            onClick={() => handleRemoveWord(i)}
-            className="px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/40 text-primary font-medium hover:bg-primary/30 transition-colors"
-            data-testid={`placed-word-${i}`}
-          >
-            {word}
-          </button>
+          <button key={i} onClick={() => handleRemoveWord(i)} className="px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/40 text-primary font-medium hover:bg-primary/30 transition-colors" data-testid={`placed-word-${i}`}>{word}</button>
         ))}
       </div>
-
-      {/* Scrollable word pool */}
-      <div
-        className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3"
-        data-testid="word-pool"
-      >
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
         {pool.map(({ word, id }) => (
-          <button
-            key={id}
-            onClick={() => handlePickWord(id, word)}
-            className="px-3 py-2 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-muted text-foreground font-medium transition-colors"
-            data-testid={`pool-word-${id}`}
-          >
-            {word}
-          </button>
+          <button key={id} onClick={() => handlePickWord(id, word)} className="px-3 py-2 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-muted text-foreground font-medium transition-colors" data-testid={`pool-word-${id}`}>{word}</button>
         ))}
       </div>
-
-      {/* Continue — always visible */}
-      <Button
-        className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
-        onClick={onContinue}
-        disabled={!correct}
-        data-testid="btn-continue"
-      >
+      <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!correct} data-testid="btn-continue">
         {isLast ? "Finish" : "Continue"}
       </Button>
     </div>
@@ -219,18 +178,14 @@ function LessonTypeA({
 
 // ─── Type B: Translate ────────────────────────────────────────────────────────
 
-function LessonTypeB({
-  lesson, onContinue, isLast,
-}: {
+function LessonTypeB({ lesson, onContinue, isLast }: {
   lesson: Extract<Lesson, { type: "B" }>;
   onContinue: () => void;
   isLast: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [wrongFlash, setWrongFlash] = useState<string | null>(null);
-
   const correct = selected === lesson.line.translation;
-
   useContinueOnKey(correct, onContinue);
 
   const handleSelect = (option: string) => {
@@ -240,51 +195,25 @@ function LessonTypeB({
     } else {
       setWrongFlash(option);
       setTimeout(() => setWrongFlash(null), 600);
-      setSelected(null);
     }
   };
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Fixed header */}
       <div className="shrink-0 rounded-xl bg-card border border-border p-4 text-center mb-2">
         <p className="text-2xl font-bold leading-relaxed">{lesson.line.original}</p>
       </div>
-      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">
-        Choose the correct translation
-      </p>
-
-      {/* Scrollable options */}
+      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">Choose the correct translation</p>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 mb-3">
         {lesson.options.map((opt, i) => {
           const isCorrectSelected = opt === lesson.line.translation && selected === opt;
           const isWrong = wrongFlash === opt;
           return (
-            <button
-              key={i}
-              onClick={() => handleSelect(opt)}
-              className={`w-full min-h-14 px-5 py-3 rounded-xl border-2 text-left text-base font-medium transition-all ${
-                isCorrectSelected
-                  ? "border-green-400 bg-green-400/10 text-green-300"
-                  : isWrong
-                  ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95"
-                  : "border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground"
-              }`}
-              data-testid={`btn-option-${i}`}
-            >
-              {opt}
-            </button>
+            <button key={i} onClick={() => handleSelect(opt)} className={`w-full min-h-14 px-5 py-3 rounded-xl border-2 text-left text-base font-medium transition-all ${isCorrectSelected ? "border-green-400 bg-green-400/10 text-green-300" : isWrong ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95" : "border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground"}`} data-testid={`btn-option-${i}`}>{opt}</button>
           );
         })}
       </div>
-
-      {/* Continue — always visible */}
-      <Button
-        className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
-        onClick={onContinue}
-        disabled={!correct}
-        data-testid="btn-continue"
-      >
+      <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!correct} data-testid="btn-continue">
         {isLast ? "Finish" : "Continue"}
       </Button>
     </div>
@@ -293,74 +222,52 @@ function LessonTypeB({
 
 // ─── Type C: Word Cloud ───────────────────────────────────────────────────────
 
-function LessonTypeC({
-  lesson, onContinue, isLast,
-}: {
+function LessonTypeC({ lesson, onContinue, isLast }: {
   lesson: Extract<Lesson, { type: "C" }>;
   onContinue: () => void;
   isLast: boolean;
 }) {
   const { leftItems, rightItems } = lesson;
-
   const [selectedLeftPos, setSelectedLeftPos] = useState<number | null>(null);
   const [matchedIds, setMatchedIds] = useState<Set<number>>(new Set());
   const [wrongFlash, setWrongFlash] = useState(false);
   const [kbPhase, setKbPhase] = useState<"left" | "right">("left");
-
   const allMatched = matchedIds.size === leftItems.length;
-
   useContinueOnKey(allMatched, onContinue);
-
   const stateRef = useRef({ selectedLeftPos, matchedIds, kbPhase });
   useEffect(() => { stateRef.current = { selectedLeftPos, matchedIds, kbPhase }; });
 
   const handleLeftClick = (pos: number) => {
     if (matchedIds.has(leftItems[pos].id)) return;
-    setSelectedLeftPos(pos);
-    setKbPhase("right");
-    setWrongFlash(false);
+    setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(false);
   };
 
   const handleRightClick = (pos: number) => {
-    if (matchedIds.has(rightItems[pos].id)) return;
-    if (selectedLeftPos === null) return;
+    if (matchedIds.has(rightItems[pos].id) || selectedLeftPos === null) return;
     const leftId = leftItems[selectedLeftPos].id;
     const rightId = rightItems[pos].id;
     if (leftId === rightId) {
       setMatchedIds((prev) => new Set([...prev, leftId]));
-      setSelectedLeftPos(null);
-      setKbPhase("left");
-      setWrongFlash(false);
+      setSelectedLeftPos(null); setKbPhase("left"); setWrongFlash(false);
     } else {
-      setWrongFlash(true);
-      setTimeout(() => setWrongFlash(false), 600);
+      setWrongFlash(true); setTimeout(() => setWrongFlash(false), 600);
     }
   };
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      // Space/Enter handled by useContinueOnKey hook
       if (e.key === " " || e.key === "Enter") return;
-
       const { selectedLeftPos, matchedIds, kbPhase } = stateRef.current;
-
       if (e.key === "Tab") {
-        if (selectedLeftPos !== null) {
-          e.preventDefault();
-          setKbPhase("right");
-        }
+        if (selectedLeftPos !== null) { e.preventDefault(); setKbPhase("right"); }
         return;
       }
-
       const digit = parseInt(e.key, 10);
       if (isNaN(digit) || digit < 1 || digit > 9) return;
       const pos = digit - 1;
-
       if (kbPhase === "left") {
         if (pos < leftItems.length && !matchedIds.has(leftItems[pos].id)) {
-          setSelectedLeftPos(pos);
-          setKbPhase("right");
-          setWrongFlash(false);
+          setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(false);
         }
       } else {
         if (pos < rightItems.length && !matchedIds.has(rightItems[pos].id) && selectedLeftPos !== null) {
@@ -368,12 +275,9 @@ function LessonTypeC({
           const rightId = rightItems[pos].id;
           if (leftId === rightId) {
             setMatchedIds((prev) => new Set([...prev, leftId]));
-            setSelectedLeftPos(null);
-            setKbPhase("left");
-            setWrongFlash(false);
+            setSelectedLeftPos(null); setKbPhase("left"); setWrongFlash(false);
           } else {
-            setWrongFlash(true);
-            setTimeout(() => setWrongFlash(false), 600);
+            setWrongFlash(true); setTimeout(() => setWrongFlash(false), 600);
           }
         }
       }
@@ -388,56 +292,25 @@ function LessonTypeC({
         Match each word to its translation
         <span className="ml-2 text-xs opacity-60">(click or press 1-9 · Tab · 1-9)</span>
       </p>
-
-      {/* Scrollable two-column area */}
       <div className="flex-1 min-h-0 overflow-y-auto flex gap-3 mb-3">
-        {/* Left column — TL words */}
         <div className="flex flex-col gap-2 flex-1">
           {leftItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             const isSelected = selectedLeftPos === pos;
             const isWrong = isSelected && wrongFlash;
             return (
-              <button
-                key={item.id}
-                onClick={() => handleLeftClick(pos)}
-                disabled={isMatched}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium text-left transition-all w-full ${
-                  isMatched
-                    ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default"
-                    : isWrong
-                    ? "border-red-500 bg-red-500/10 text-red-400 animate-pulse"
-                    : isSelected
-                    ? "border-primary bg-primary/15 text-primary"
-                    : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"
-                }`}
-                data-testid={`left-${pos}`}
-              >
+              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-red-500 bg-red-500/10 text-red-400 animate-pulse" : isSelected ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
                 <span className="text-xs text-muted-foreground w-4 shrink-0">{pos + 1}</span>
                 <span>{item.phrase}</span>
               </button>
             );
           })}
         </div>
-
-        {/* Right column — shuffled translations */}
         <div className="flex flex-col gap-2 flex-1">
           {rightItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             return (
-              <button
-                key={item.id}
-                onClick={() => handleRightClick(pos)}
-                disabled={isMatched || selectedLeftPos === null}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium text-left transition-all w-full ${
-                  isMatched
-                    ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default"
-                    : selectedLeftPos !== null
-                    ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"
-                    : "border-border bg-card text-foreground opacity-60 cursor-default"
-                }`}
-                data-testid={`right-${pos}`}
-              >
+              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
                 <span className="text-xs text-muted-foreground w-4 shrink-0">{pos + 1}</span>
                 <span>{item.translation}</span>
               </button>
@@ -445,12 +318,140 @@ function LessonTypeC({
           })}
         </div>
       </div>
+      <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!allMatched} data-testid="btn-continue">
+        {isLast ? "Finish" : "Continue"}
+      </Button>
+    </div>
+  );
+}
 
-      {/* Continue — always visible */}
+// ─── Type D: Missing Word ─────────────────────────────────────────────────────
+
+function LessonTypeD({ lesson, songLanguage, onContinue, isLast }: {
+  lesson: Extract<Lesson, { type: "D" }>;
+  songLanguage: string;
+  onContinue: () => void;
+  isLast: boolean;
+}) {
+  const { line, targetWord, blankIndex } = lesson;
+  const words = tokenize(line.original);
+
+  const [selected, setSelected] = useState<string | null>(null);
+  const [wrongFlash, setWrongFlash] = useState<string | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const correct = selected !== null && stripPunct(selected).toLowerCase() === stripPunct(targetWord).toLowerCase();
+  useContinueOnKey(correct, onContinue);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingOptions(true);
+    setLoadError(false);
+
+    fetch("/api/songs/distractors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        word: targetWord,
+        line: line.original,
+        language: songLanguage,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const distractors: string[] = Array.isArray(data.distractors) ? data.distractors : [];
+        setOptions(shuffle([targetWord, ...distractors.slice(0, 5)]));
+        setLoadingOptions(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Fallback: use surrounding words as crude distractors
+        const fallback = shuffle(
+          words.filter((w) => stripPunct(w).toLowerCase() !== stripPunct(targetWord).toLowerCase())
+        ).slice(0, 5);
+        setOptions(shuffle([targetWord, ...fallback]));
+        setLoadingOptions(false);
+        setLoadError(true);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSelect = (opt: string) => {
+    if (correct) return;
+    if (stripPunct(opt).toLowerCase() === stripPunct(targetWord).toLowerCase()) {
+      setSelected(opt);
+    } else {
+      setWrongFlash(opt);
+      setTimeout(() => setWrongFlash(null), 600);
+    }
+  };
+
+  // Render the line with blank or filled word
+  const renderedLine = words.map((w, i) => {
+    if (i !== blankIndex) return w;
+    if (correct) return <span key={i} className="text-green-400 font-bold">{w}</span>;
+    return <span key={i} className="inline-block border-b-2 border-primary px-2 min-w-[3rem] text-center text-primary">{"_____"}</span>;
+  });
+
+  const lineWithSpaces = renderedLine.reduce<React.ReactNode[]>((acc, el, i) => {
+    if (i > 0) acc.push(" ");
+    acc.push(el);
+    return acc;
+  }, []);
+
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">Fill in the missing word</p>
+
+      {/* Line display */}
+      <div className="shrink-0 rounded-xl bg-card border border-border p-5 text-center mb-4">
+        <p className="text-xl font-semibold leading-relaxed">{lineWithSpaces}</p>
+        <p className="text-sm mt-2" style={{ color: "#fdb8c8" }}>{line.translation}</p>
+      </div>
+
+      {/* Options */}
+      {loadingOptions ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto grid grid-cols-2 gap-3 mb-3 content-start">
+          {loadError && (
+            <p className="col-span-2 text-xs text-muted-foreground text-center mb-1 opacity-60">
+              (using fallback distractors)
+            </p>
+          )}
+          {options.map((opt, i) => {
+            const isCorrectSelected = correct && stripPunct(opt).toLowerCase() === stripPunct(targetWord).toLowerCase();
+            const isWrong = wrongFlash === opt;
+            return (
+              <button
+                key={i}
+                onClick={() => handleSelect(opt)}
+                className={`w-full min-h-14 px-4 py-3 rounded-xl border-2 text-base font-medium transition-all ${
+                  isCorrectSelected
+                    ? "border-green-400 bg-green-400/10 text-green-300"
+                    : isWrong
+                    ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95"
+                    : "border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground"
+                }`}
+                data-testid={`btn-option-${i}`}
+              >
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <Button
         className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
         onClick={onContinue}
-        disabled={!allMatched}
+        disabled={!correct}
         data-testid="btn-continue"
       >
         {isLast ? "Finish" : "Continue"}
@@ -459,7 +460,7 @@ function LessonTypeC({
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ExercisesGame() {
   const [, params] = useRoute("/song/:id/exercises");
@@ -504,55 +505,43 @@ export default function ExercisesGame() {
   };
 
   if (songLoading || lyricsLoading || vocabLoading)
-    return (
-      <div className="min-h-[100dvh] flex items-center justify-center text-muted-foreground">
-        Loading...
-      </div>
-    );
+    return <div className="min-h-[100dvh] flex items-center justify-center text-muted-foreground">Loading...</div>;
+
   if (!song || !lyrics || lessons.length === 0)
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 p-8">
-        <p className="text-muted-foreground text-center">
-          No lyrics found — add lyrics from the Song Lab to play exercises.
-        </p>
-        <Link href={`/song/${id}`}>
-          <Button variant="outline">Back to Song</Button>
-        </Link>
+        <p className="text-muted-foreground text-center">No lyrics found — add lyrics from the Song Lab to play exercises.</p>
+        <Link href={`/song/${id}`}><Button variant="outline">Back to Song</Button></Link>
       </div>
     );
 
   const currentLesson = lessons[lesson];
   const badgeLabel =
     currentLesson.type === "A" ? "Shuffled Line" :
-    currentLesson.type === "B" ? "Translate" : "Match";
+    currentLesson.type === "B" ? "Translate" :
+    currentLesson.type === "C" ? "Match" : "Missing Word";
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background p-4 max-w-lg mx-auto w-full overflow-hidden">
-      {/* Header */}
       <div className="flex justify-between items-center mb-4 shrink-0">
-        <Link
-          href={`/song/${id}`}
-          className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
-          data-testid="link-back"
-        >
+        <Link href={`/song/${id}`} className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground" data-testid="link-back">
           <ArrowLeft className="w-6 h-6" />
         </Link>
         <div className="font-bold text-primary bg-primary/10 px-4 py-1 rounded-full border border-primary/20">
           Lesson {lesson + 1} / 10
         </div>
-        <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-          {badgeLabel}
-        </div>
+        <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{badgeLabel}</div>
       </div>
 
-      {/* Lesson area — takes remaining height, no overflow */}
       <div className="flex-1 min-h-0 flex flex-col">
         {currentLesson.type === "A" ? (
           <LessonTypeA key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
         ) : currentLesson.type === "B" ? (
           <LessonTypeB key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
-        ) : (
+        ) : currentLesson.type === "C" ? (
           <LessonTypeC key={key} lesson={currentLesson} onContinue={handleContinue} isLast={lesson === 9} />
+        ) : (
+          <LessonTypeD key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
         )}
       </div>
     </div>
