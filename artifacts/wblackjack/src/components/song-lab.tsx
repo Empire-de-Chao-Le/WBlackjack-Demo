@@ -131,6 +131,7 @@ export function SongLab() {
         title={title}
         youtubeUrl={youtubeUrl}
         language={language}
+        onExit={() => setIsSyncing(false)}
         lines={csvData.map((row, idx) => ({
           lineIndex: idx,
           original: row[0] ?? "",

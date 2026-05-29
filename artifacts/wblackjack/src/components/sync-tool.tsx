@@ -1,7 +1,17 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Undo2, Pause, Play, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   useCreateSong,
   useUpsertLyrics,
@@ -10,16 +20,17 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
+type YTPlayer = {
+  getCurrentTime: () => number;
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+};
+
 declare global {
   interface Window {
     YT: {
-      Player: new (
-        id: string,
-        opts: object
-      ) => {
-        getCurrentTime: () => number;
-        playVideo: () => void;
-      };
+      Player: new (id: string, opts: object) => YTPlayer;
     };
     onYouTubeIframeAPIReady: () => void;
   }
@@ -41,6 +52,7 @@ interface Props {
   youtubeUrl: string;
   language: string;
   lines: LyricLineInput[];
+  onExit: () => void;
 }
 
 function extractVideoId(url: string): string {
@@ -48,10 +60,10 @@ function extractVideoId(url: string): string {
   return match ? match[1] : url;
 }
 
-export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) {
+export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }: Props) {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const playerRef = useRef<{ getCurrentTime: () => number; playVideo: () => void } | null>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
 
   // currentIdx = index of the UPCOMING line to be stamped on the next tap.
   // The bright/middle line is lines[currentIdx - 1] (already stamped & currently playing).
@@ -61,6 +73,8 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     { lineIndex: number; timestampMs: number }[]
   >([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   // Holds all recorded timestamps once every line has been stamped,
   // so "Add to library" can submit them without relying on stale state.
   const finalTimestampsRef = useRef<{ lineIndex: number; timestampMs: number }[]>([]);
@@ -90,7 +104,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
       videoId: extractVideoId(youtubeUrl),
       playerVars: { playsinline: 1, rel: 0, modestbranding: 1, autoplay: 1 },
       events: {
-        onReady: (e: { target: { playVideo: () => void } }) => e.target.playVideo(),
+        onReady: (e: { target: YTPlayer }) => e.target.playVideo(),
       },
     });
   }
@@ -138,9 +152,43 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     save(finalTimestampsRef.current);
   };
 
+  // Undo: roll back one line and seek playback to that line's recorded timestamp.
+  // If nothing is left, return to the very start (time=0, three-dots state).
+  const handleUndo = () => {
+    if (currentIdx === 0) return;
+    finalTimestampsRef.current = [];
+    const newIdx = currentIdx - 1;
+
+    // Seek target = the recorded start of the line being re-synced (the one we just
+    // removed). If we've rolled all the way back to the start (3-dots state), go to 0.
+    const seekMs = newIdx === 0 ? 0 : (timestamps[newIdx]?.timestampMs ?? 0);
+
+    setTimestamps(timestamps.slice(0, newIdx));
+    setCurrentIdx(newIdx);
+
+    const player = playerRef.current;
+    if (player) {
+      player.seekTo(seekMs / 1000, true);
+      player.playVideo();
+    }
+    setIsPaused(false);
+  };
+
+  const handlePauseResume = () => {
+    const player = playerRef.current;
+    if (!player) return;
+    if (isPaused) {
+      player.playVideo();
+      setIsPaused(false);
+    } else {
+      player.pauseVideo();
+      setIsPaused(true);
+    }
+  };
+
   const isDone = currentIdx >= lines.length;
 
-  // Spacebar fires the active button
+  // Spacebar fires the active primary button
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Space") return;
@@ -151,6 +199,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
       )
         return;
       e.preventDefault();
+      if (isPaused || showExitConfirm) return;
       if (!isDone) {
         handleTap();
       } else if (!isSaving) {
@@ -159,7 +208,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isDone, isSaving, currentIdx, timestamps]);
+  }, [isDone, isSaving, isPaused, showExitConfirm, currentIdx, timestamps]);
 
   // Display slots:
   // pastLine    = lines[currentIdx - 2]  (far past, dull)
@@ -224,13 +273,13 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
         )}
       </div>
 
-      <div className="mt-4 shrink-0">
+      <div className="mt-4 shrink-0 space-y-3">
         {!isDone ? (
           <Button
             size="lg"
             className="w-full h-14 text-2xl font-bold bg-primary hover:bg-primary/90 active:scale-[0.97] transition-transform"
             onClick={handleTap}
-            disabled={isSaving}
+            disabled={isSaving || isPaused}
             data-testid="btn-tap"
           >
             <Check className="mr-2 w-7 h-7" />
@@ -248,7 +297,74 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines }: Props) 
             {isSaving ? "Saving…" : "Add to library"}
           </Button>
         )}
+
+        {/* Secondary controls */}
+        <div className="grid grid-cols-3 gap-2">
+          <Button
+            variant="outline"
+            className="h-11 font-medium"
+            onClick={handleUndo}
+            disabled={currentIdx === 0 || isSaving}
+            data-testid="btn-undo"
+          >
+            <Undo2 className="mr-1.5 w-4 h-4" />
+            Undo
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 font-medium"
+            onClick={handlePauseResume}
+            disabled={isSaving}
+            data-testid="btn-pause"
+          >
+            {isPaused ? (
+              <>
+                <Play className="mr-1.5 w-4 h-4" />
+                Resume
+              </>
+            ) : (
+              <>
+                <Pause className="mr-1.5 w-4 h-4" />
+                Pause
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 font-medium text-destructive hover:text-destructive"
+            onClick={() => setShowExitConfirm(true)}
+            disabled={isSaving}
+            data-testid="btn-exit"
+          >
+            <X className="mr-1.5 w-4 h-4" />
+            Exit
+          </Button>
+        </div>
       </div>
+
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit Sync Tool?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your recorded timestamps will be discarded and not saved. You'll return
+              to the Song Lab with your inputs intact.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="btn-exit-cancel">
+              Keep syncing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onExit}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              data-testid="btn-exit-confirm"
+            >
+              Exit without saving
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
