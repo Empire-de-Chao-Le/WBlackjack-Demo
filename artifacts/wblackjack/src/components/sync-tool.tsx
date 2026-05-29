@@ -152,16 +152,18 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
     save(finalTimestampsRef.current);
   };
 
-  // Undo: roll back one line and seek playback to that line's recorded timestamp.
-  // If nothing is left, return to the very start (time=0, three-dots state).
+  // Undo: roll back one line and seek playback to the start of the line that
+  // becomes the new bright/current line. If nothing is left, return to the very
+  // start (time=0, three-dots state).
   const handleUndo = () => {
     if (currentIdx === 0) return;
     finalTimestampsRef.current = [];
     const newIdx = currentIdx - 1;
 
-    // Seek target = the recorded start of the line being re-synced (the one we just
-    // removed). If we've rolled all the way back to the start (3-dots state), go to 0.
-    const seekMs = newIdx === 0 ? 0 : (timestamps[newIdx]?.timestampMs ?? 0);
+    // After undo the new bright line is lines[newIdx - 1]; seek to its recorded
+    // start = timestamps[newIdx - 1]. At newIdx === 0 there's no bright line
+    // (3-dots state) → go to the beginning of the song.
+    const seekMs = newIdx === 0 ? 0 : (timestamps[newIdx - 1]?.timestampMs ?? 0);
 
     setTimestamps(timestamps.slice(0, newIdx));
     setCurrentIdx(newIdx);

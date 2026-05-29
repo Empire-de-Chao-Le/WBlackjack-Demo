@@ -1,1 +1,2 @@
 - [WBlackjack architecture](wblackjack-arch.md) — full-stack song learning app; key patterns for db schema, API routes, and frontend hooks
+- [Sync/Karaoke timestamp model](sync-timestamp-model.md) — timestamp[i]=start of line i; record & consume must agree; undo seeks timestamps[newIdx-1]; int column rounding.
