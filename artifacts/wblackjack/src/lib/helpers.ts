@@ -11,7 +11,8 @@ export const getLanguageFlag = (lang: string) => {
     'russian': '🇷🇺',
     'italian': '🇮🇹',
     'portuguese': '🇧🇷',
-    'english': '🇬🇧'
+    'english': '🇬🇧',
+    'polish': '🇵🇱'
   };
   const key = lang.toLowerCase().trim();
   return map[key] || '🌐';
