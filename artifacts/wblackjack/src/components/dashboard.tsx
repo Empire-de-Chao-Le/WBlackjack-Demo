@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, Trash2, AlertTriangle } from "lucide-react";
+import { Search, X, AlertTriangle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type SortOption =
@@ -186,10 +186,10 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
           filteredSongs?.map((song) => (
             <div
               key={song.id}
-              className="bg-card rounded-xl overflow-hidden flex items-center p-2 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
+              className="bg-card rounded-xl overflow-hidden flex items-stretch p-2 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
             >
               <div
-                className="w-[62px] h-[62px] bg-muted rounded-lg overflow-hidden flex-shrink-0 relative"
+                className="w-[62px] h-[62px] bg-muted rounded-lg overflow-hidden flex-shrink-0 relative self-start"
                 style={{ border: `2px solid ${progressColor(song.timesPlayed, song.status)}` }}
               >
                 <img
@@ -213,14 +213,13 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                   <p className="truncate mt-0.5 text-[14px] text-[#a39daf]">{song.artist}</p>
                 </Link>
 
-                <div className="mt-0.5">
+                <div className="mt-auto">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <button
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 hover:text-red-600 transition-colors"
+                        className="inline-flex items-center text-[11px] font-medium text-muted-foreground/60 hover:text-red-600 hover:border-red-600 transition-colors border border-border/60 rounded px-2 py-0.5"
                         data-testid={`btn-delete-${song.id}`}
                       >
-                        <Trash2 className="w-3 h-3" />
                         Delete
                       </button>
                     </AlertDialogTrigger>
