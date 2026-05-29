@@ -95,7 +95,7 @@ function AutocompleteInput({
 
 const MIN_COLS = 6;
 
-export function SongLab() {
+export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
   const [artist, setArtist] = useState("");
   const [title, setTitle] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
@@ -187,6 +187,10 @@ export function SongLab() {
         youtubeUrl={youtubeUrl}
         language={language}
         onExit={() => setIsSyncing(false)}
+        onSaved={() => {
+          setIsSyncing(false);
+          onSongAdded?.();
+        }}
         lines={csvData.map((row, idx) => ({
           lineIndex: idx,
           original: row[0] ?? "",

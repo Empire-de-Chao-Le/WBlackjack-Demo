@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Check, Undo2, Pause, Play, X } from "lucide-react";
 import {
@@ -53,6 +52,7 @@ interface Props {
   language: string;
   lines: LyricLineInput[];
   onExit: () => void;
+  onSaved: () => void;
 }
 
 function extractVideoId(url: string): string {
@@ -60,8 +60,7 @@ function extractVideoId(url: string): string {
   return match ? match[1] : url;
 }
 
-export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }: Props) {
-  const [, setLocation] = useLocation();
+export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved }: Props) {
   const queryClient = useQueryClient();
   const playerRef = useRef<YTPlayer | null>(null);
 
@@ -113,6 +112,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
   }
 
   const save = async (finalTimestamps: { lineIndex: number; timestampMs: number }[]) => {
+    if (isSaving) return;
     setIsSaving(true);
     try {
       const song = await createSong.mutateAsync({
@@ -124,7 +124,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit }:
         data: { timestamps: finalTimestamps },
       });
       queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
-      setLocation("/");
+      onSaved();
     } catch (e) {
       console.error(e);
       setIsSaving(false);
