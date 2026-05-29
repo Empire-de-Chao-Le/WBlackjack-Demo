@@ -487,7 +487,7 @@ export default function KaraokeGame() {
       {/* ── Lyrics scroll — centred ──────────────────────────────────────── */}
       <div
         ref={lyricsScrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-5"
+        className="flex-1 overflow-y-auto px-4 py-2 space-y-2"
         style={{ scrollBehavior: "smooth" }}
       >
         {lyrics.map((line, lineArrIdx) => {
@@ -507,7 +507,7 @@ export default function KaraokeGame() {
               ref={(el) => {
                 lineRefs.current[lineArrIdx] = el;
               }}
-              className={`${opacity} ${scale} font-bold leading-loose flex flex-wrap justify-center gap-x-2 gap-y-3 transition-all duration-500`}
+              className={`${opacity} ${scale} font-bold leading-snug flex flex-wrap justify-center gap-x-2 gap-y-1 transition-all duration-500`}
             >
               {words.map((word, wi) => {
                 const gap = gaps.find(
