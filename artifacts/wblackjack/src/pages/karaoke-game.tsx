@@ -518,11 +518,7 @@ export default function KaraokeGame() {
                     return (
                       <span
                         key={wi}
-                        className={`inline-flex items-center ${
-                          filled.firstTry
-                            ? "text-green-400"
-                            : "text-pink-400"
-                        }`}
+                        className="inline-flex items-center text-green-400 text-[23px]"
                       >
                         {filled.word}
                       </span>
