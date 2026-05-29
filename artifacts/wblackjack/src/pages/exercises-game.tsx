@@ -50,7 +50,7 @@ function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
   const eligible = lyrics.filter((l) => tokenize(l.original).length >= 3);
   if (eligible.length === 0) return [];
 
-  const hasVocab = vocab.length >= 9;
+  const hasVocab = vocab.length >= 8;
   const typeCount = hasVocab ? 4 : 3;
 
   const usedByType: Record<"A" | "B" | "D", Set<number>> = {
@@ -80,7 +80,7 @@ function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
       ].filter((d): d is string => typeof d === "string" && d.trim() !== "");
       lessons.push({ type: "B", line, options: shuffle([correct, ...csvDistractors]) });
     } else if (pick === 2 && hasVocab) {
-      const selected = shuffle(vocab).slice(0, 9);
+      const selected = shuffle(vocab).slice(0, 8);
       const leftItems: WordCloudItem[] = selected.map((v) => ({ id: v.id, phrase: v.phrase }));
       const rightItems: WordCloudTranslation[] = shuffle(
         selected.map((v) => ({ id: v.id, translation: v.translation }))
@@ -297,25 +297,25 @@ function LessonTypeC({ lesson, onContinue, isLast }: {
         <span className="ml-2 text-xs opacity-60">(click or press 1-9 · Tab · 1-9)</span>
       </p>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 mb-3">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
           {leftItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             const isSelected = selectedLeftPos === pos;
             const isWrong = isSelected && wrongFlash;
             return (
-              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-base font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-red-500 bg-red-500/10 text-red-400 animate-pulse" : isSelected ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
-                <span className="text-xs text-muted-foreground w-4 shrink-0">{pos + 1}</span>
+              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-red-500 bg-red-500/10 text-red-400 animate-pulse" : isSelected ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
+                <span className="text-xs text-muted-foreground shrink-0">{pos + 1}</span>
                 <span>{item.phrase}</span>
               </button>
             );
           })}
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
           {rightItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             return (
-              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-base font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
-                <span className="text-xs text-muted-foreground w-4 shrink-0">{pos + 1}</span>
+              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
+                <span className="text-xs text-muted-foreground shrink-0">{pos + 1}</span>
                 <span>{item.translation}</span>
               </button>
             );
