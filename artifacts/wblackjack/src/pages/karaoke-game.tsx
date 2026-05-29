@@ -60,59 +60,72 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function buildGaps(lyrics: LyricLine[], difficulty: number): Gap[] {
-  const gaps: Gap[] = [];
+  // Flatten every word in the song into one ordered list so the interval
+  // is applied globally rather than per-line.  Per-line intervals produced
+  // zero gaps on short lines (< 7 words) which is the root of the "1 gap
+  // for the whole song" bug.
+  const allPositions: { lineIndex: number; wordIndex: number; word: string }[] = [];
   for (const line of lyrics) {
-    const words = tokenize(line.original);
-    if (difficulty === 100) {
-      words.forEach((w, i) => {
-        gaps.push({ id: `${line.lineIndex}-${i}`, lineIndex: line.lineIndex, wordIndex: i, word: w });
-      });
-    } else {
-      const [minInterval, maxInterval] = difficulty === 33 ? [2, 4] : [7, 11];
-      let i = randBetween(minInterval, maxInterval) - 1;
-      while (i < words.length) {
-        gaps.push({ id: `${line.lineIndex}-${i}`, lineIndex: line.lineIndex, wordIndex: i, word: words[i] });
-        i += randBetween(minInterval, maxInterval);
-      }
-    }
+    tokenize(line.original).forEach((w, i) => {
+      allPositions.push({ lineIndex: line.lineIndex, wordIndex: i, word: w });
+    });
+  }
+
+  if (difficulty === 100) {
+    return allPositions.map((p) => ({
+      id: `${p.lineIndex}-${p.wordIndex}`,
+      lineIndex: p.lineIndex,
+      wordIndex: p.wordIndex,
+      word: p.word,
+    }));
+  }
+
+  // For 10 % use an interval of 8–12 words; for 33 % use 2–4 words.
+  const [minGap, maxGap] = difficulty === 33 ? [2, 4] : [8, 12];
+
+  const gaps: Gap[] = [];
+  // Start at a random offset inside the first interval so the first blank
+  // isn't always the same word of the song.
+  let i = randBetween(minGap, maxGap) - 1;
+  while (i < allPositions.length) {
+    const p = allPositions[i];
+    gaps.push({
+      id: `${p.lineIndex}-${p.wordIndex}`,
+      lineIndex: p.lineIndex,
+      wordIndex: p.wordIndex,
+      word: p.word,
+    });
+    i += randBetween(minGap, maxGap);
   }
   return gaps;
 }
 
-/** Build an initial 4-slot dock: correctWord + 3 random decoys, shuffled. */
-function buildInitialDock(currentCorrect: string, allGapWords: string[]): string[] {
-  const pool = allGapWords.filter(
-    (w) => w.toLowerCase() !== currentCorrect.toLowerCase()
-  );
-  const decoys = shuffle(pool).slice(0, 3);
-  while (decoys.length < 3) decoys.push("***");
-  return shuffle([currentCorrect, ...decoys]);
-}
-
 /**
- * Pick a random decoy that is neither the current correct word nor the word
- * currently occupying the slot (so the slot always visibly changes).
+ * Paper-stacks model — pre-distribute all correct words across 4 stacks.
+ *
+ * Gaps are processed in groups of 4.  Within each group the 4 answers are
+ * assigned to stacks using a fresh random permutation of [0,1,2,3], so
+ * across any 4 consecutive gaps every stack receives exactly one answer and
+ * the slot the player must tap changes each time.
+ *
+ * Within a stack the answers sit in the order they will be needed, so the
+ * top card is always the NEXT correct answer that lives in that stack.
+ * Because the 4 stacks collectively always expose the CURRENT correct answer
+ * plus 3 future answers as visible distractors, the invariant holds without
+ * any separate decoy pool.
+ *
+ * Returns 4 arrays (one per stack); each array is consumed front-to-back.
  */
-function pickDecoy(
-  correctWord: string,
-  currentSlotWord: string,
-  allGapWords: string[]
-): string {
-  const pool = allGapWords.filter(
-    (w) =>
-      w.toLowerCase() !== correctWord.toLowerCase() &&
-      w.toLowerCase() !== currentSlotWord.toLowerCase()
-  );
-  if (pool.length === 0) {
-    // Fall back: allow same as slot but not the correct word.
-    const fallback = allGapWords.filter(
-      (w) => w.toLowerCase() !== correctWord.toLowerCase()
-    );
-    return fallback.length > 0
-      ? fallback[Math.floor(Math.random() * fallback.length)]
-      : "***";
+function buildStacks(gaps: Gap[]): string[][] {
+  const stacks: string[][] = [[], [], [], []];
+  for (let g = 0; g < gaps.length; g += 4) {
+    const group = gaps.slice(g, g + 4);
+    const slotOrder = shuffle([0, 1, 2, 3]);
+    group.forEach((gap, i) => {
+      stacks[slotOrder[i]].push(gap.word);
+    });
   }
-  return pool[Math.floor(Math.random() * pool.length)];
+  return stacks;
 }
 
 function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
@@ -154,7 +167,12 @@ export default function KaraokeGame() {
   const [currentLineIdx, setCurrentLineIdx] = useState(0);
   const [flashingSlot, setFlashingSlot] = useState<number | null>(null);
   const [filledGaps, setFilledGaps] = useState<Map<string, FilledGap>>(new Map());
-  const [dock, setDock] = useState<string[]>(["***", "***", "***", "***"]);
+  /**
+   * 4 stacks of words (front = top / currently visible).
+   * Popping the front of a stack happens when the player taps the correct word
+   * from that stack; wrong taps leave stacks unchanged.
+   */
+  const [stacks, setStacks] = useState<string[][]>([[], [], [], []]);
   const [hits, setHits] = useState(0);
   const [fails, setFails] = useState(0);
   /** lineIndex (data-model) of the line that caused a pause; null when not paused */
@@ -171,11 +189,10 @@ export default function KaraokeGame() {
 
   const allFilled = gaps.length > 0 && currentGapIdx === -1;
 
-  // Initialise dock when gaps are ready
+  // Build stacks once gaps are ready (or whenever the gap set changes).
   useEffect(() => {
     if (gaps.length === 0) return;
-    const allWords = gaps.map((g) => g.word);
-    setDock(buildInitialDock(gaps[0].word, allWords));
+    setStacks(buildStacks(gaps));
   }, [gaps]);
 
   const extractVideoId = (url: string): string => {
@@ -352,17 +369,16 @@ export default function KaraokeGame() {
     if (lineEl) lineEl.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [currentGapIdx, gaps]);
 
-  // ── Dock slot handling ────────────────────────────────────────────────────────
-  // Only the tapped slot changes — the other 3 stay in their positions.
-  // • Correct tap  → that slot gets the NEXT correct word (or "***" if done).
-  // • Wrong tap    → that slot gets a fresh decoy, so the user must look elsewhere.
+  // ── Dock slot handling (paper-stacks model) ──────────────────────────────────
+  // • Correct tap  → the tapped stack is popped (top card removed), revealing
+  //                  whatever is underneath.  The next correct answer is already
+  //                  visible somewhere in the 4 stacks (invariant).
+  // • Wrong tap    → stacks are NOT changed; the player must look elsewhere.
   const handleSlotClick = useCallback(
     (word: string, slotIdx: number) => {
       if (word === "***" || currentGapIdx === -1) return;
       const targetGap = gaps[currentGapIdx];
       if (!targetGap) return;
-
-      const allWords = gaps.map((g) => g.word);
 
       if (word.trim().toLowerCase() === targetGap.word.trim().toLowerCase()) {
         // ── Correct ──────────────────────────────────────────────────────────
@@ -374,19 +390,11 @@ export default function KaraokeGame() {
         });
         if (isFirstTry) setHits((h) => h + 1);
 
-        // Next unfilled gap (using current filledGaps snapshot — targetGap not
-        // yet in the Map, so the search starts from currentGapIdx + 1).
-        const nextGapIdx = gaps.findIndex(
-          (g, i) => i > currentGapIdx && !filledGaps.has(g.id)
+        // Pop the top card from the tapped stack — the next card (if any) in
+        // that stack now becomes visible.  The other 3 stacks are untouched.
+        setStacks((prev) =>
+          prev.map((s, i) => (i === slotIdx ? s.slice(1) : s))
         );
-
-        // Replace only the tapped slot with the next correct word.
-        setDock((prev) => {
-          const next = [...prev];
-          next[slotIdx] =
-            nextGapIdx !== -1 ? gaps[nextGapIdx].word : "***";
-          return next;
-        });
       } else {
         // ── Wrong ────────────────────────────────────────────────────────────
         setFails((f) => f + 1);
@@ -397,14 +405,7 @@ export default function KaraokeGame() {
         });
         setFlashingSlot(slotIdx);
         setTimeout(() => setFlashingSlot(null), 600);
-
-        // Replace only the tapped slot with a new decoy — guaranteed different
-        // from both the correct answer and the word that was just there.
-        setDock((prev) => {
-          const next = [...prev];
-          next[slotIdx] = pickDecoy(targetGap.word, prev[slotIdx], allWords);
-          return next;
-        });
+        // Stacks are unchanged — the correct card is still in another stack.
       }
     },
     [currentGapIdx, gaps, filledGaps]
@@ -414,11 +415,14 @@ export default function KaraokeGame() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
-      if (n >= 1 && n <= 4) handleSlotClick(dock[n - 1], n - 1);
+      if (n >= 1 && n <= 4) {
+        const dock = stacks.map((s) => s[0] ?? "***");
+        handleSlotClick(dock[n - 1], n - 1);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleSlotClick, dock]);
+  }, [handleSlotClick, stacks]);
 
   const handleFinish = async () => {
     if (lineTrackIntervalRef.current) clearInterval(lineTrackIntervalRef.current);
@@ -571,23 +575,26 @@ export default function KaraokeGame() {
           </Button>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {dock.map((word, i) => (
-              <Button
-                key={i}
-                className={`h-20 text-xl font-bold border-2 transition-all duration-150 ${
-                  flashingSlot === i
-                    ? "bg-pink-500/20 border-pink-500 text-pink-400 scale-95"
-                    : word === "***"
-                    ? "bg-card border-border/30 text-muted-foreground/30 cursor-default"
-                    : "bg-card border-border hover:bg-muted hover:border-primary/50 text-foreground"
-                }`}
-                onClick={() => handleSlotClick(word, i)}
-                data-testid={`btn-word-${i + 1}`}
-                disabled={word === "***"}
-              >
-                {word === "***" ? "···" : word}
-              </Button>
-            ))}
+            {stacks.map((s, i) => {
+              const word = s[0] ?? "***";
+              return (
+                <Button
+                  key={i}
+                  className={`h-20 text-xl font-bold border-2 transition-all duration-150 ${
+                    flashingSlot === i
+                      ? "bg-pink-500/20 border-pink-500 text-pink-400 scale-95"
+                      : word === "***"
+                      ? "bg-card border-border/30 text-muted-foreground/30 cursor-default"
+                      : "bg-card border-border hover:bg-muted hover:border-primary/50 text-foreground"
+                  }`}
+                  onClick={() => handleSlotClick(word, i)}
+                  data-testid={`btn-word-${i + 1}`}
+                  disabled={word === "***"}
+                >
+                  {word === "***" ? "···" : word}
+                </Button>
+              );
+            })}
           </div>
         )}
       </div>
