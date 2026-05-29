@@ -544,7 +544,7 @@ export default function KaraokeGame() {
       </div>
 
       {/* ── Dock — always pinned to bottom ──────────────────────────────── */}
-      <div className="shrink-0 px-4 pb-4 pt-2 border-t border-border/50">
+      <div className="shrink-0 px-4 pb-safe pt-2 border-t border-border/50">
         <div className="flex justify-end mb-2">
           <Button
             variant="ghost"
