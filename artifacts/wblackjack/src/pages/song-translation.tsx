@@ -34,17 +34,14 @@ export default function SongTranslation() {
           )}
         </div>
       </div>
-
       {isLoading && (
         <p className="text-center text-muted-foreground mt-8">Loading…</p>
       )}
-
       {!isLoading && (!lyrics || lyrics.length === 0) && (
         <p className="text-center text-muted-foreground mt-8">
           No lyrics added for this song yet.
         </p>
       )}
-
       {lyrics && lyrics.length > 0 && (
         <div className="space-y-6">
           {lyrics.map((line) => (
@@ -52,7 +49,7 @@ export default function SongTranslation() {
               <p className="text-xl font-semibold text-white leading-snug">
                 {line.original}
               </p>
-              <p className="text-sm leading-snug" style={{ color: "#fdb8c8" }}>
+              <p className="text-[16px]" style={{ color: "#fdb8c8" }}>
                 {line.translation}
               </p>
             </div>
