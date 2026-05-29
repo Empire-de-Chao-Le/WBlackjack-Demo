@@ -186,10 +186,11 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
           filteredSongs?.map((song) => (
             <div
               key={song.id}
-              className="bg-card rounded-xl overflow-hidden flex items-center p-2 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
+              className="bg-card rounded-xl overflow-hidden flex items-stretch p-2 gap-3 border border-card-border hover:border-primary/40 transition-colors group"
             >
+              {/* Thumbnail */}
               <div
-                className="w-[62px] h-[62px] bg-muted rounded-lg overflow-hidden flex-shrink-0 relative"
+                className="w-[62px] h-[62px] bg-muted rounded-lg overflow-hidden flex-shrink-0 relative self-center"
                 style={{ border: `2px solid ${progressColor(song.timesPlayed, song.status)}` }}
               >
                 <img
@@ -199,7 +200,8 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                 />
               </div>
 
-              <div className="flex-1 min-w-0 flex flex-col">
+              {/* Title + artist */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <Link href={`/song/${song.id}`} className="block min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-base">{getLanguageFlag(song.language)}</span>
@@ -212,102 +214,102 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                   </div>
                   <p className="truncate mt-0.5 text-[14px] text-[#a39daf]">{song.artist}</p>
                 </Link>
-
-                <div className="mt-0.5">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 hover:text-red-600 transition-colors"
-                        data-testid={`btn-delete-${song.id}`}
-                      >
-                        Delete
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
-                          <AlertTriangle className="h-8 w-8 text-red-600" strokeWidth={2.5} />
-                        </div>
-                        <AlertDialogTitle className="text-center">
-                          Delete "{song.title}"?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-center">
-                          This permanently removes the song, its lyrics, and timestamps
-                          from your library. This cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                          onClick={() => {
-                            deleteSong.mutate(
-                              { id: song.id },
-                              {
-                                onSuccess: () => {
-                                  queryClient.invalidateQueries({
-                                    queryKey: getListSongsQueryKey(),
-                                  });
-                                },
-                              }
-                            );
-                          }}
-                          data-testid={`btn-delete-confirm-${song.id}`}
-                        >
-                          Delete song
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
               </div>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
-                    className="w-5 h-5 rounded-full border-2 border-border shrink-0 transition-transform hover:scale-110 relative"
-                    style={{
-                      backgroundColor: progressColor(song.timesPlayed, song.status),
-                    }}
-                    title="Mark as Done"
-                    data-testid={`btn-mark-done-${song.id}`}
-                  >
-                    {song.status === "done" && (
-                      <span className="absolute inset-0 flex items-center justify-center text-black text-[8px] font-black">
-                        ✓
-                      </span>
-                    )}
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Mark "{song.title}" as Done?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will mark the song as completed. This cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        updateSong.mutate(
-                          { id: song.id, data: { status: "done" } },
-                          {
-                            onSuccess: () => {
-                              queryClient.invalidateQueries({
-                                queryKey: getListSongsQueryKey(),
-                              });
-                            },
-                          }
-                        );
-                      }}
+              {/* Right column: indicator (top) + delete (bottom) */}
+              <div className="flex flex-col justify-between items-center shrink-0 py-0.5">
+                {/* Indicator */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      className="w-5 h-5 rounded-md border-2 border-border transition-transform hover:scale-110 relative"
+                      style={{ backgroundColor: progressColor(song.timesPlayed, song.status) }}
+                      title="Mark as Done"
+                      data-testid={`btn-mark-done-${song.id}`}
                     >
-                      Confirm
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                      {song.status === "done" && (
+                        <span className="absolute inset-0 flex items-center justify-center text-black text-[8px] font-black">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Mark "{song.title}" as Done?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will mark the song as completed. This cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          updateSong.mutate(
+                            { id: song.id, data: { status: "done" } },
+                            {
+                              onSuccess: () => {
+                                queryClient.invalidateQueries({
+                                  queryKey: getListSongsQueryKey(),
+                                });
+                              },
+                            }
+                          );
+                        }}
+                      >
+                        Confirm
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Delete */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      className="w-5 h-5 flex items-center justify-center text-muted-foreground/40 hover:text-red-600 transition-colors"
+                      data-testid={`btn-delete-${song.id}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
+                        <AlertTriangle className="h-8 w-8 text-red-600" strokeWidth={2.5} />
+                      </div>
+                      <AlertDialogTitle className="text-center">
+                        Delete "{song.title}"?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-center">
+                        This permanently removes the song, its lyrics, and timestamps
+                        from your library. This cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        onClick={() => {
+                          deleteSong.mutate(
+                            { id: song.id },
+                            {
+                              onSuccess: () => {
+                                queryClient.invalidateQueries({
+                                  queryKey: getListSongsQueryKey(),
+                                });
+                              },
+                            }
+                          );
+                        }}
+                        data-testid={`btn-delete-confirm-${song.id}`}
+                      >
+                        Delete song
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           ))
         )}
