@@ -157,20 +157,20 @@ function LessonTypeA({ lesson, onContinue, isLast }: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <p className="text-sm text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
+      <p className="text-base text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
       <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-3 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
         {correct
-          ? <span className="text-green-400 font-medium text-base">{lesson.line.original}</span>
+          ? <span className="text-green-400 font-medium text-lg">{lesson.line.original}</span>
           : placed.length === 0
-            ? <span className="text-muted-foreground/40 text-sm">Click words below to place them here</span>
+            ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
             : placed.map((word, i) => (
-                <button key={i} onClick={() => handleRemoveWord(i)} className="px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/40 text-white font-medium hover:bg-primary/30 transition-colors" data-testid={`placed-word-${i}`}>{word}</button>
+                <button key={i} onClick={() => handleRemoveWord(i)} className="px-4 py-2 rounded-lg bg-primary/20 border border-primary/40 text-white text-base font-medium hover:bg-primary/30 transition-colors" data-testid={`placed-word-${i}`}>{word}</button>
               ))
         }
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
         {pool.map(({ word, id }) => (
-          <button key={id} onClick={() => handlePickWord(id, word)} className="px-3 py-2 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-muted text-foreground font-medium transition-colors" data-testid={`pool-word-${id}`}>{word}</button>
+          <button key={id} onClick={() => handlePickWord(id, word)} className="px-4 py-2.5 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-muted text-foreground text-base font-medium transition-colors" data-testid={`pool-word-${id}`}>{word}</button>
         ))}
       </div>
       <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!correct} data-testid="btn-continue">
@@ -296,25 +296,25 @@ function LessonTypeC({ lesson, onContinue, isLast }: {
         Match each word to its translation
         <span className="ml-2 text-xs opacity-60">(click or press 1-9 · Tab · 1-9)</span>
       </p>
-      <div className="flex-1 min-h-0 overflow-y-auto flex gap-3 mb-3">
-        <div className="flex flex-col gap-2 flex-1">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 mb-3">
+        <div className="flex flex-col gap-2">
           {leftItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             const isSelected = selectedLeftPos === pos;
             const isWrong = isSelected && wrongFlash;
             return (
-              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-red-500 bg-red-500/10 text-red-400 animate-pulse" : isSelected ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
+              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-base font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-red-500 bg-red-500/10 text-red-400 animate-pulse" : isSelected ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
                 <span className="text-xs text-muted-foreground w-4 shrink-0">{pos + 1}</span>
                 <span>{item.phrase}</span>
               </button>
             );
           })}
         </div>
-        <div className="flex flex-col gap-2 flex-1">
+        <div className="flex flex-col gap-2">
           {rightItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             return (
-              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
+              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-base font-medium text-left transition-all w-full ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
                 <span className="text-xs text-muted-foreground w-4 shrink-0">{pos + 1}</span>
                 <span>{item.translation}</span>
               </button>
