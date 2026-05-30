@@ -257,7 +257,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
       </div>
       <div className="shrink-0 h-8 flex items-center justify-center px-2 mb-2">
         {correct && (
-          <p className="text-[18px] text-center" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
+          <p className="text-[18px] text-left" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
         )}
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
