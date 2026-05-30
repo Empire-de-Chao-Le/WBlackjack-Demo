@@ -144,17 +144,17 @@ function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
           strokeLinecap="round"
           fill="none"
         />
-        {/* Inner arc: spiral inward ~100° CW (R≈5), connecting outer tip to inner end */}
+        {/* Inner arc: spiral inward to center (12,12), R≈4.5 for smooth tangent join */}
         <path
-          d="M15.1,3.5 A5,5,0,0,1,17,12"
+          d="M15.1,3.5 A4.5,4.5,0,0,1,12,12"
           stroke="#8c3cdd"
           strokeWidth={sw}
           strokeLinecap="round"
           fill="none"
         />
-        {/* Arrowhead at inner end pointing CW (downward at 3-o'clock inner) */}
+        {/* Arrowhead at center pointing in arrival direction (~right-downward) */}
         <path
-          d="M14.5,10 L17,14 L19.5,10"
+          d="M9.8,12.4 L12,12 L10.6,10.2"
           stroke="#8c3cdd"
           strokeWidth={sw}
           strokeLinecap="round"
