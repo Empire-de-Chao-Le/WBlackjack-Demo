@@ -59,9 +59,29 @@ const LANG_MAP: Record<string, string> = {
 function speak(text: string, langName: string) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = LANG_MAP[langName.toLowerCase()] ?? langName;
-  window.speechSynthesis.speak(utt);
+
+  const langCode = LANG_MAP[langName.toLowerCase()] ?? langName;
+  const langPrefix = langCode.split("-")[0];
+
+  function doSpeak() {
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = langCode;
+    const voices = window.speechSynthesis.getVoices();
+    // Prefer exact match, then same language prefix (e.g. "pl" for "pl-PL")
+    const voice =
+      voices.find((v) => v.lang === langCode) ??
+      voices.find((v) => v.lang.startsWith(langPrefix + "-")) ??
+      voices.find((v) => v.lang.startsWith(langPrefix));
+    if (voice) utt.voice = voice;
+    window.speechSynthesis.speak(utt);
+  }
+
+  // On some browsers (Chrome mobile) voices load asynchronously
+  if (window.speechSynthesis.getVoices().length > 0) {
+    doSpeak();
+  } else {
+    window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
+  }
 }
 
 function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
