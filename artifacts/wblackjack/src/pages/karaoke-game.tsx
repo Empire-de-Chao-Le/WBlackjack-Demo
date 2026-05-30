@@ -129,26 +129,19 @@ function buildStacks(gaps: Gap[]): string[][] {
 }
 
 function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
-  const dim = size === "lg" ? 32 : 20;
+  const cls = size === "lg" ? "w-8 h-8 border-4" : "w-5 h-5 border-2";
+  const dotCls = size === "lg" ? "w-1.5 h-1.5" : "w-1 h-1";
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width={dim}
-      height={dim}
-      fill="none"
-      style={{ animation: "spin 2s linear infinite", display: "inline-block", verticalAlign: "middle" }}
+    <span
+      className={`inline-flex items-center justify-center relative ${cls === "w-8 h-8 border-4" ? "w-8 h-8" : "w-5 h-5"}`}
+      style={{ verticalAlign: "middle" }}
     >
-      {/* Spiral arc: 270° clockwise from top, ending at the left */}
-      <path
-        d="M 12 2.5 A 9.5 9.5 0 1 1 2.5 12"
-        stroke="#8c3cdd"
-        strokeWidth="2.5"
-        strokeLinecap="butt"
-        fill="none"
+      <span
+        className={`absolute inset-0 rounded-full border-t-transparent animate-spin ${cls}`}
+        style={{ borderColor: "#8c3cdd #8c3cdd #8c3cdd transparent" }}
       />
-      {/* Arrowhead at arc end pointing inward (toward center) */}
-      <polygon points="5.5,12 1.5,10 1.5,14" fill="#8c3cdd" />
-    </svg>
+      <span className={`${dotCls} rounded-full shrink-0`} style={{ backgroundColor: "#8c3cdd" }} />
+    </span>
   );
 }
 
