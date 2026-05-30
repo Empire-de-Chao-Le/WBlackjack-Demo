@@ -683,31 +683,36 @@ export default function ExercisesGame() {
     );
 
   const currentLesson = lessons[lesson];
-  const badgeLabel =
-    currentLesson.type === "A" ? "Shuffled Line" :
-    currentLesson.type === "B" ? "Translate" :
-    currentLesson.type === "C" ? "Match" : "Missing Word";
+  const lessonMeta: Record<string, { label: string; description: string }> = {
+    A: { label: "Shuffled Line",  description: "Reconstruct the original line" },
+    B: { label: "Translate",      description: "Pick the correct translation" },
+    C: { label: "Match",          description: "Match the phrases to their translations" },
+    D: { label: "Missing Word",   description: "Choose the missing word" },
+  };
+  const { label: lessonLabel, description: lessonDesc } = lessonMeta[currentLesson.type];
 
   return (
     <div className="h-full flex flex-col bg-background p-4 max-w-lg mx-auto w-full overflow-hidden">
-      <div className="flex justify-between items-center mb-4 shrink-0">
+      <div className="flex justify-between items-center shrink-0">
         <Link href={`/song/${id}`} className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors" data-testid="link-back">
           <ArrowLeft className="w-7 h-7" />
         </Link>
         <div className="font-bold text-primary bg-primary/10 px-4 py-1 rounded-full border border-primary/20">
           Lesson {lesson + 1} / 10
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{badgeLabel}</div>
-          <button
-            onClick={toggleTts}
-            className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
-            aria-label={ttsOn ? "Mute sound" : "Unmute sound"}
-          >
-            {ttsOn ? <Volume2 className="w-7 h-7" /> : <VolumeX className="w-7 h-7" />}
-          </button>
-        </div>
+        <button
+          onClick={toggleTts}
+          className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
+          aria-label={ttsOn ? "Mute sound" : "Unmute sound"}
+        >
+          {ttsOn ? <Volume2 className="w-7 h-7" /> : <VolumeX className="w-7 h-7" />}
+        </button>
       </div>
+      <p className="text-sm text-muted-foreground mt-2 mb-3 shrink-0">
+        <span className="font-semibold text-foreground">{lessonLabel}</span>
+        {" — "}
+        {lessonDesc}
+      </p>
 
       <div className="flex-1 min-h-0 flex flex-col">
         {currentLesson.type === "A" ? (
