@@ -9,6 +9,7 @@ export function LanguagesTab() {
   const [, setLocation] = useLocation();
 
   const countMap = new Map(stats?.map((s) => [s.language, s.count]) ?? []);
+  const worldCount = stats ? stats.reduce((sum, s) => sum + s.count, 0) : undefined;
 
   if (isLoading) {
     return (
@@ -35,6 +36,11 @@ export function LanguagesTab() {
       >
         <span className="text-6xl leading-none">🌍</span>
         <span className="text-base font-semibold capitalize text-foreground">The World</span>
+        {worldCount !== undefined && (
+          <span className="text-xs text-muted-foreground">
+            {worldCount} words of Babylonian Chaos!
+          </span>
+        )}
       </button>
 
       {languages.map((lang) => {
