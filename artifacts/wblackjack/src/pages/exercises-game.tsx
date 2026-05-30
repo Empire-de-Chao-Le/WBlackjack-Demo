@@ -140,9 +140,9 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
   onContinue: () => void;
   isLast: boolean;
 }) {
-  const [placed, setPlaced] = useState<string[]>([]);
-  const [pool, setPool] = useState<{ word: string; id: number }[]>(
-    lesson.shuffledWords.map((w, i) => ({ word: w, id: i }))
+  const [placed, setPlaced] = useState<{ word: string; poolId: number }[]>([]);
+  const [pool, setPool] = useState<{ word: string; id: number; used: boolean }[]>(
+    lesson.shuffledWords.map((w, i) => ({ word: w, id: i, used: false }))
   );
   const [correct, setCorrect] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -152,10 +152,10 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
 
   const handlePickWord = (id: number, word: string) => {
     if (correct) return;
-    const newPlaced = [...placed, word];
+    setPool((prev) => prev.map((p) => p.id === id ? { ...p, used: true } : p));
+    const newPlaced = [...placed, { word, poolId: id }];
     setPlaced(newPlaced);
-    setPool((prev) => prev.filter((p) => p.id !== id));
-    const stripped = newPlaced.map(stripPunct);
+    const stripped = newPlaced.map((p) => stripPunct(p.word));
     const target = targetWords.map(stripPunct);
     if (stripped.length === target.length && stripped.every((w, i) => w.toLowerCase() === target[i].toLowerCase())) {
       setCorrect(true); setFlash(true); setTimeout(() => setFlash(false), 600);
@@ -164,33 +164,43 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
 
   const handleRemoveWord = (idx: number) => {
     if (correct) return;
-    const word = placed[idx];
+    const { poolId } = placed[idx];
     setPlaced((prev) => prev.filter((_, i) => i !== idx));
-    const originalId = lesson.shuffledWords.reduce((acc, w, i) => {
-      if (w === word && !pool.find((p) => p.id === i) && acc === -1) return i;
-      return acc;
-    }, -1);
-    setPool((prev) =>
-      [...prev, { word, id: originalId >= 0 ? originalId : Date.now() }].sort((a, b) => a.id - b.id)
-    );
+    setPool((prev) => prev.map((p) => p.id === poolId ? { ...p, used: false } : p));
   };
 
   return (
     <div className="flex flex-col h-full min-h-0">
       <p className="text-base text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
-      <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-3 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
+      <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-2 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
         {correct
           ? <span className="text-green-400 font-medium text-lg">{lesson.line.original}</span>
           : placed.length === 0
             ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
-            : placed.map((word, i) => (
+            : placed.map(({ word }, i) => (
                 <button key={i} onClick={() => handleRemoveWord(i)} className="px-4 py-2 rounded-lg bg-primary/20 border border-primary/40 text-white font-medium hover:bg-primary/30 transition-colors text-[20px]" data-testid={`placed-word-${i}`}>{word}</button>
               ))
         }
       </div>
+      <div className="shrink-0 h-8 flex items-center justify-center px-2 mb-2">
+        {correct && (
+          <p className="text-[18px] text-center text-muted-foreground">{lesson.line.translation}</p>
+        )}
+      </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
-        {pool.map(({ word, id }) => (
-          <button key={id} onClick={() => handlePickWord(id, word)} className="px-4 py-2.5 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-muted text-foreground font-medium transition-colors text-[20px]" data-testid={`pool-word-${id}`}>{word}</button>
+        {pool.map(({ word, id, used }) => (
+          <button
+            key={id}
+            onClick={() => !used && handlePickWord(id, word)}
+            className={`px-4 py-2.5 rounded-lg border font-medium transition-colors text-[20px] ${
+              used
+                ? "bg-muted/20 border-border/20 text-muted-foreground cursor-default"
+                : "bg-muted border-border hover:border-primary/50 hover:bg-muted/70 text-foreground"
+            }`}
+            data-testid={`pool-word-${id}`}
+          >
+            {word}
+          </button>
         ))}
       </div>
       <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!correct} data-testid="btn-continue">
