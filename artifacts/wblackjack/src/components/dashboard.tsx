@@ -58,14 +58,33 @@ interface DashboardProps {
   onFilteredSongsChange?: (ids: number[]) => void;
 }
 
+const FILTER_KEY = "dashboard_filters";
+function loadFilters() {
+  try {
+    const raw = sessionStorage.getItem(FILTER_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {};
+}
+function saveFilters(filters: Record<string, string>) {
+  try { sessionStorage.setItem(FILTER_KEY, JSON.stringify(filters)); } catch {}
+}
+
 export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [status, setStatus] = useState<"all" | "new" | "active" | "done">("all");
-  const [language, setLanguage] = useState<string>("all");
-  const [artist, setArtist] = useState<string>("all");
-  const [sort, setSort] = useState<SortOption>("date_added_desc");
+  const saved = loadFilters();
+  const [search, setSearchRaw] = useState<string>(saved.search ?? "");
+  const [searchOpen, setSearchOpen] = useState<boolean>(!!saved.search);
+  const [status, setStatusRaw] = useState<"all" | "new" | "active" | "done">(saved.status ?? "all");
+  const [language, setLanguageRaw] = useState<string>(saved.language ?? "all");
+  const [artist, setArtistRaw] = useState<string>(saved.artist ?? "all");
+  const [sort, setSortRaw] = useState<SortOption>(saved.sort ?? "date_added_desc");
+
+  const setSearch = (v: string) => { setSearchRaw(v); saveFilters({ search: v, status, language, artist, sort }); };
+  const setStatus = (v: "all" | "new" | "active" | "done") => { setStatusRaw(v); saveFilters({ search, status: v, language, artist, sort }); };
+  const setLanguage = (v: string) => { setLanguageRaw(v); saveFilters({ search, status, language: v, artist, sort }); };
+  const setArtist = (v: string) => { setArtistRaw(v); saveFilters({ search, status, language, artist: v, sort }); };
+  const setSort = (v: SortOption) => { setSortRaw(v); saveFilters({ search, status, language, artist, sort: v }); };
 
   const { data: languages } = useListLanguages();
   const { data: artists } = useListArtists();
