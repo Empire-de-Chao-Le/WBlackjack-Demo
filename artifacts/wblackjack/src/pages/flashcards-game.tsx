@@ -81,15 +81,18 @@ function buildQuestion(
   const questionText = type === "tl-en" ? entry.phrase : entry.translation;
   const correctOption = type === "tl-en" ? entry.translation : entry.phrase;
 
-  const distractors = shuffle(
-    pool.filter((e) => {
-      if (e.id === entry.id) return false;
-      const val = type === "tl-en" ? e.translation : e.phrase;
-      return val !== correctOption;
-    })
-  )
-    .slice(0, 3)
-    .map((e) => (type === "tl-en" ? e.translation : e.phrase));
+  // Collect up to 3 distractors with UNIQUE values so two options are never identical
+  // (duplicate option strings would collide as React keys and leave ghost nodes).
+  const distractors: string[] = [];
+  const seen = new Set<string>([correctOption]);
+  for (const e of shuffle(pool)) {
+    if (e.id === entry.id) continue;
+    const val = type === "tl-en" ? e.translation : e.phrase;
+    if (seen.has(val)) continue;
+    seen.add(val);
+    distractors.push(val);
+    if (distractors.length === 3) break;
+  }
 
   return {
     entry,
@@ -161,6 +164,11 @@ export default function FlashcardsGame() {
     try { sessionStorage.setItem("home_return_tab", "languages"); } catch {}
     setLocation("/");
   };
+
+  // Grab focus on mount so keyboard shortcuts work without a prior click
+  useEffect(() => {
+    try { window.focus(); } catch {}
+  }, []);
 
   // Keyboard shortcuts: 1-4 pick options, Space/Enter advance question card
   useEffect(() => {
@@ -327,7 +335,7 @@ export default function FlashcardsGame() {
       <div className="flex flex-col gap-3">
         {currentQ.options.map((opt, i) => (
           <button
-            key={opt}
+            key={`${currentIdx}-${i}-${opt}`}
             onClick={() => handleOptionClick(opt)}
             disabled={selectedOption !== null}
             className={`
