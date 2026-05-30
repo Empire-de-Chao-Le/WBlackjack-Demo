@@ -162,6 +162,24 @@ export default function FlashcardsGame() {
     setLocation("/");
   };
 
+  // Keyboard shortcuts: 1-4 pick options, Space/Enter advance question card
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (["1", "2", "3", "4"].includes(e.key)) {
+        const idx = parseInt(e.key) - 1;
+        const q = questionsRef.current[currentIdx];
+        if (q && selectedOption === null) {
+          handleOptionClick(q.options[idx]);
+        }
+      } else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        if (selectedOption !== null) handleQuestionCardClick();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedOption, currentIdx]);
+
   const handleOptionClick = (opt: string) => {
     if (selectedOption !== null || !questions[currentIdx]) return;
     const q = questions[currentIdx];
@@ -307,20 +325,24 @@ export default function FlashcardsGame() {
 
       {/* Option cards */}
       <div className="flex flex-col gap-3">
-        {currentQ.options.map((opt) => (
+        {currentQ.options.map((opt, i) => (
           <button
             key={opt}
             onClick={() => handleOptionClick(opt)}
             disabled={selectedOption !== null}
             className={`
               w-full rounded-2xl border border-border shadow-sm
-              px-6 py-4 text-xl font-bold text-center
+              px-6 py-4 text-xl font-bold
+              flex items-center gap-4
               transition-all duration-150
               ${optionClass(opt)}
               ${selectedOption === null ? "cursor-pointer" : "cursor-default"}
             `}
           >
-            {opt}
+            <span className="shrink-0 w-7 h-7 rounded-lg bg-black/10 flex items-center justify-center text-sm font-bold">
+              {i + 1}
+            </span>
+            <span className="flex-1 text-center">{opt}</span>
           </button>
         ))}
       </div>
