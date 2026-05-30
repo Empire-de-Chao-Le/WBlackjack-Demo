@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, vocabTable, songsTable } from "@workspace/db";
+import { mergeVocabIntoWordPool } from "./word-pool";
 import Papa from "papaparse";
 
 const router: IRouter = Router();
@@ -49,7 +50,7 @@ router.post("/songs/:id/vocab/csv", async (req, res): Promise<void> => {
   }
 
   const [song] = await db
-    .select({ id: songsTable.id })
+    .select({ id: songsTable.id, language: songsTable.language })
     .from(songsTable)
     .where(eq(songsTable.id, songId));
   if (!song) {
@@ -91,6 +92,11 @@ router.post("/songs/:id/vocab/csv", async (req, res): Promise<void> => {
   }
 
   const inserted = await db.insert(vocabTable).values(entries).returning();
+
+  await mergeVocabIntoWordPool(
+    song.language,
+    entries.map((e) => ({ phrase: e.phrase, translation: e.translation }))
+  );
 
   res.json(
     inserted.map((v) => ({
