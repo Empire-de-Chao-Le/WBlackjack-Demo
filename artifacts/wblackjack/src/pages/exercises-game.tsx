@@ -65,21 +65,28 @@ function speak(text: string, langName: string) {
 }
 
 function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
-  const eligible = lyrics.filter((l) => tokenize(l.original).length >= 3);
+  // Deduplicate by content so identical lyric lines count as one
+  const seen = new Set<string>();
+  const eligible = lyrics.filter((l) => {
+    if (tokenize(l.original).length < 3) return false;
+    if (seen.has(l.original)) return false;
+    seen.add(l.original);
+    return true;
+  });
   if (eligible.length === 0) return [];
 
   const hasVocab = vocab.length >= 8;
   const typeCount = hasVocab ? 4 : 3;
 
-  const usedByType: Record<"A" | "B" | "D", Set<number>> = {
+  const usedByType: Record<"A" | "B" | "D", Set<string>> = {
     A: new Set(), B: new Set(), D: new Set(),
   };
 
   function pickLine(type: "A" | "B" | "D"): LyricLine {
-    const unused = eligible.filter((l) => !usedByType[type].has(l.lineIndex));
+    const unused = eligible.filter((l) => !usedByType[type].has(l.original));
     const pool = unused.length > 0 ? unused : eligible;
     const line = pool[Math.floor(Math.random() * pool.length)];
-    usedByType[type].add(line.lineIndex);
+    usedByType[type].add(line.original);
     return line;
   }
 
