@@ -233,7 +233,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
       <p className="text-base text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
       <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-2 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
         {correct
-          ? <span className="text-green-400 font-medium text-lg">{lesson.line.original}</span>
+          ? <span className="text-green-400 font-medium text-2xl">{lesson.line.original}</span>
           : placed.length === 0
             ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
             : displayItems.map(({ word, origIdx, isGhost }, displayIdx) => (
@@ -257,7 +257,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
       </div>
       <div className="shrink-0 h-8 flex items-center justify-center px-2 mb-2">
         {correct && (
-          <p className="text-[18px] text-center text-muted-foreground">{lesson.line.translation}</p>
+          <p className="text-[18px] text-center" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
         )}
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
@@ -267,7 +267,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
             onClick={() => !used && handlePickWord(id, word)}
             className={`px-4 py-2.5 rounded-lg border font-medium transition-colors text-[20px] ${
               used
-                ? "bg-muted/20 border-border/20 text-muted-foreground cursor-default"
+                ? "bg-muted/30 border-border/30 text-foreground/30 cursor-default"
                 : "bg-muted border-border hover:border-primary/50 hover:bg-muted/70 text-foreground"
             }`}
             data-testid={`pool-word-${id}`}
