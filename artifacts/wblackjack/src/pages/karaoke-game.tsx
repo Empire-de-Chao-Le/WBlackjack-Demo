@@ -576,15 +576,12 @@ export default function KaraokeGame() {
                   className={`relative h-[68px] text-xl font-bold border-2 transition-all duration-150 flex items-center justify-center ${
                     flashingSlot === i
                       ? "bg-pink-500/20 border-pink-500 text-pink-400 scale-95"
-                      : word === "***"
-                      ? "bg-card border-border/30 text-muted-foreground/30 cursor-default"
                       : "bg-primary hover:bg-primary/90 border-primary text-primary-foreground shadow-md"
                   }`}
                   onClick={() => handleSlotClick(word, i)}
                   data-testid={`btn-word-${i + 1}`}
-                  disabled={word === "***"}
                 >
-                  <span className={`absolute ${numCorner} text-[11px] font-black tracking-widest ${word === "***" ? "opacity-30" : "opacity-60"}`}>{i + 1}</span>
+                  <span className={`absolute ${numCorner} text-[14px] font-black tracking-widest opacity-60`}>{i + 1}</span>
                   <span className="text-xl font-bold leading-none">{word === "***" ? "···" : word}</span>
                 </Button>
               );
