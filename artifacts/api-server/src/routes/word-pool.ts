@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, inArray, sql } from "drizzle-orm";
-import { db, wordPoolTable, vocabTable, songsTable } from "@workspace/db";
+import { db, wordPoolTable, vocabTable, songsTable, flashcardProgressTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -53,6 +53,35 @@ router.get("/word-pool/stats", async (_req, res): Promise<void> => {
     .orderBy(wordPoolTable.language);
 
   res.json(rows.map((r) => ({ language: r.language, count: r.count })));
+});
+
+/**
+ * GET /word-pool/world
+ * Returns all word pool entries across every language, excluding any entry
+ * that has been individually marked as ignored in flashcard_progress.
+ * Used by International Flashcards (no SRS, pure shuffle mode).
+ */
+router.get("/word-pool/world", async (_req, res): Promise<void> => {
+  const [allEntries, ignoredRows] = await Promise.all([
+    db.select().from(wordPoolTable),
+    db
+      .select({ wordPoolId: flashcardProgressTable.wordPoolId })
+      .from(flashcardProgressTable)
+      .where(eq(flashcardProgressTable.ignored, true)),
+  ]);
+
+  const ignoredIds = new Set(ignoredRows.map((r) => r.wordPoolId));
+
+  const pool = allEntries
+    .filter((e) => !ignoredIds.has(e.id))
+    .map((e) => ({
+      id: e.id,
+      language: e.language,
+      phrase: e.phrase,
+      translation: e.translation,
+    }));
+
+  res.json(pool);
 });
 
 /**

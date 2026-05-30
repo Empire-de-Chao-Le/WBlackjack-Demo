@@ -14,6 +14,7 @@ import KaraokePicker from "@/pages/karaoke-picker";
 import KaraokeGame from "@/pages/karaoke-game";
 import ExercisesGame from "@/pages/exercises-game";
 import FlashcardsGame from "@/pages/flashcards-game";
+import InternationalFlashcards from "@/pages/international-flashcards";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/song/:id/karaoke" component={KaraokePicker} />
       <Route path="/song/:id/karaoke/:difficulty" component={KaraokeGame} />
       <Route path="/song/:id/exercises" component={ExercisesGame} />
+      <Route path="/flashcards/world" component={InternationalFlashcards} />
       <Route path="/flashcards/:language" component={FlashcardsGame} />
       <Route component={NotFound} />
     </Switch>

@@ -28,6 +28,15 @@ export function LanguagesTab() {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 py-2">
+      {/* The World — always first; pool is all languages combined */}
+      <button
+        onClick={() => setLocation("/flashcards/world")}
+        className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card hover:bg-muted/60 hover:border-primary/40 transition-all p-6 aspect-square shadow-sm active:scale-95"
+      >
+        <span className="text-6xl leading-none">🌍</span>
+        <span className="text-base font-semibold capitalize text-foreground">The World</span>
+      </button>
+
       {languages.map((lang) => {
         const count = countMap.get(lang);
         return (
