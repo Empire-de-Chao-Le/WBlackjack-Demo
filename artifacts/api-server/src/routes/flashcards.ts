@@ -121,13 +121,14 @@ router.get("/flashcards/due/:language", async (req, res): Promise<void> => {
   const dueNowIds: number[] = [];                                   // dueDate <= today
   const newIds: number[] = [];                                      // never reviewed
   const soonDue: { id: number; dueDate: string }[] = [];           // dueDate > today
+  const ignoredIds: number[] = [];                                  // permanently ignored
 
   for (const id of poolIds) {
     const prog = progressMap.get(id);
     if (prog === undefined) {
       newIds.push(id);
     } else if (prog.ignored) {
-      // excluded from all session buckets
+      ignoredIds.push(id);
     } else if (prog.dueDate <= today) {
       dueNowIds.push(id);
     } else {
@@ -170,9 +171,11 @@ router.get("/flashcards/due/:language", async (req, res): Promise<void> => {
     session.push(...soonDue.slice(0, need).map((e) => e.id));
   }
 
-  // Shuffle the combined set so new and review cards are interleaved
+  // Shuffle the combined set so new and review cards are interleaved.
+  // ignoredIds is returned so the frontend can exclude them from distractors too.
   res.json({
     cardIds: shuffle(session),
+    ignoredIds,
     dueCount: dueNowIds.length,
     newCount: newIds.length,
     totalAvailable: poolIds.length,

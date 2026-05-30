@@ -164,6 +164,7 @@ export default function FlashcardsGame() {
       if (!res.ok) throw new Error("Failed to load due cards");
       return res.json() as Promise<{
         cardIds: number[];
+        ignoredIds: number[];
         dueCount: number;
         newCount: number;
         totalAvailable: number;
@@ -189,9 +190,16 @@ export default function FlashcardsGame() {
   // (unlike window.focus() which browsers block from within frames).
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Pool with ignored words stripped out — used as the distractor source so
+  // ignored words never appear as wrong-answer choices either.
+  const ignoredSet = new Set(session?.ignoredIds ?? []);
+  const distractorPool = pool ? pool.filter((e) => !ignoredSet.has(e.id)) : [];
+
   useEffect(() => {
     if (pool && pool.length >= 4 && session) {
-      setQuestions(buildSessionFromIds(session.cardIds, pool));
+      const ignored = new Set(session.ignoredIds ?? []);
+      const dPool = pool.filter((e) => !ignored.has(e.id));
+      setQuestions(buildSessionFromIds(session.cardIds, dPool));
       setCurrentIdx(0);
       setSelectedOption(null);
       setIsCorrect(null);
@@ -259,9 +267,9 @@ export default function FlashcardsGame() {
       // Missed an original card → re-show it later this session (new random
       // direction) so the user practices it again before the session ends.
       // This is the deliberate exception to the once-per-day pull rule.
-      if (!correct && pool && pool.length >= 4) {
+      if (!correct && distractorPool.length >= 4) {
         const dupType: "tl-en" | "en-tl" = q.type === "tl-en" ? "en-tl" : "tl-en";
-        const dup = buildQuestion(q.entry, dupType, pool, false);
+        const dup = buildQuestion(q.entry, dupType, distractorPool, false);
         setQuestions((qs) => [...qs, dup]);
       }
     }
