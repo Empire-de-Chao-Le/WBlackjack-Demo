@@ -129,8 +129,9 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
           data: { artist, title, youtubeUrl, language },
         });
         songId = song.id;
-        await upsertLyrics.mutateAsync({ id: songId, data: { lines } });
       }
+
+      await upsertLyrics.mutateAsync({ id: songId, data: { lines } });
 
       await saveTimestamps.mutateAsync({
         id: songId,
