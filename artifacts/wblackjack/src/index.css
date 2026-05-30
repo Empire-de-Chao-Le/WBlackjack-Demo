@@ -64,6 +64,10 @@
 
 }
 
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
 /* Base variables */
 :root {
   --app-font-sans: 'Noto Sans', sans-serif;

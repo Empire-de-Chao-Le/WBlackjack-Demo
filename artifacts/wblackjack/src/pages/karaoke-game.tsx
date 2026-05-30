@@ -129,18 +129,39 @@ function buildStacks(gaps: Gap[]): string[][] {
 }
 
 function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
-  const cls = size === "lg" ? "w-8 h-8 border-4" : "w-5 h-5 border-2";
-  const dotCls = size === "lg" ? "w-1.5 h-1.5" : "w-1 h-1";
+  const [wh, sw] = size === "lg" ? [32, 2.5] : [20, 2.0];
   return (
     <span
-      className={`inline-flex items-center justify-center relative ${cls === "w-8 h-8 border-4" ? "w-8 h-8" : "w-5 h-5"}`}
+      className={`inline-flex items-center justify-center animate-spin-slow ${size === "lg" ? "w-8 h-8" : "w-5 h-5"}`}
       style={{ verticalAlign: "middle" }}
     >
-      <span
-        className={`absolute inset-0 rounded-full border-t-transparent animate-spin ${cls}`}
-        style={{ borderColor: "#8c3cdd #8c3cdd #8c3cdd transparent" }}
-      />
-      <span className={`${dotCls} rounded-full shrink-0`} style={{ backgroundColor: "#8c3cdd" }} />
+      <svg width={wh} height={wh} viewBox="0 0 24 24" fill="none">
+        {/* Outer arc: ~290° CW from 3-o'clock (R=9) — forms the spiral body */}
+        <path
+          d="M21,12 A9,9,0,1,1,15.1,3.5"
+          stroke="#8c3cdd"
+          strokeWidth={sw}
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Inner arc: spiral inward ~100° CW (R≈5), connecting outer tip to inner end */}
+        <path
+          d="M15.1,3.5 A5,5,0,0,1,17,12"
+          stroke="#8c3cdd"
+          strokeWidth={sw}
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Arrowhead at inner end pointing CW (downward at 3-o'clock inner) */}
+        <path
+          d="M14.5,10 L17,14 L19.5,10"
+          stroke="#8c3cdd"
+          strokeWidth={sw}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </svg>
     </span>
   );
 }
