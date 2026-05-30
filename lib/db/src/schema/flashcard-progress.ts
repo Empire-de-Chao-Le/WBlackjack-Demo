@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, real, date, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, real, date, timestamp, uniqueIndex, boolean } from "drizzle-orm/pg-core";
 
 export const flashcardProgressTable = pgTable(
   "flashcard_progress",
@@ -10,6 +10,7 @@ export const flashcardProgressTable = pgTable(
     easeFactor: real("ease_factor").notNull().default(2.5),
     reps: integer("reps").notNull().default(0),
     dueDate: date("due_date", { mode: "string" }).notNull(),
+    ignored: boolean("ignored").notNull().default(false),
     lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

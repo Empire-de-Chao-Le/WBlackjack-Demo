@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Ban } from "lucide-react";
 
 // ── TTS (self-contained copy so this page is independent) ─────────────────────
 let _ttsEnabled: boolean = (() => {
@@ -267,6 +267,34 @@ export default function FlashcardsGame() {
     }
   };
 
+  const handleIgnore = () => {
+    const q = questionsRef.current[currentIdx];
+    if (!q) return;
+    const entryId = q.entry.id;
+
+    // Persist the ignore flag (fire-and-forget).
+    fetch("/api/flashcards/ignore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wordPoolId: entryId }),
+    }).catch((err) => console.error("Failed to ignore card", err));
+
+    // Remove this card and any pending in-session retries of the same word.
+    const qs = questionsRef.current;
+    const nextQuestions = [
+      ...qs.slice(0, currentIdx),
+      ...qs.slice(currentIdx + 1).filter((q2) => q2.entry.id !== entryId),
+    ];
+    setQuestions(nextQuestions);
+    setSelectedOption(null);
+    setIsCorrect(null);
+
+    // If nothing is left at or after the current index, the session is done.
+    if (currentIdx >= nextQuestions.length) {
+      setSessionDone(true);
+    }
+  };
+
   const handleQuestionCardClick = () => {
     if (selectedOption === null) return;
     // Always advance — the useEffect above detects when we've gone past the end
@@ -356,7 +384,7 @@ export default function FlashcardsGame() {
       tabIndex={-1}
       className="min-h-[100dvh] bg-background text-foreground flex flex-col p-4 max-w-lg mx-auto w-full outline-none"
     >
-      {/* Top row: back + progress bar */}
+      {/* Top row: back + progress bar + ignore */}
       <div className="flex items-center gap-3 mb-5 mt-1">
         <button
           onClick={goBack}
@@ -371,9 +399,14 @@ export default function FlashcardsGame() {
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="shrink-0 text-sm font-semibold text-muted-foreground min-w-[40px] text-right">
-          {currentIdx}/{totalQ}
-        </span>
+        <button
+          onClick={handleIgnore}
+          className="shrink-0 p-2 rounded-xl bg-muted text-muted-foreground hover:bg-red-500 hover:text-white transition-colors"
+          aria-label="Ignore this card forever"
+          title="Ignore — never show this card again"
+        >
+          <Ban className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Question card */}

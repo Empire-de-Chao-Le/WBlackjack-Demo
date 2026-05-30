@@ -107,25 +107,31 @@ router.get("/flashcards/due/:language", async (req, res): Promise<void> => {
   }
 
   const progressRows = await db
-    .select({ wordPoolId: flashcardProgressTable.wordPoolId, dueDate: flashcardProgressTable.dueDate })
+    .select({
+      wordPoolId: flashcardProgressTable.wordPoolId,
+      dueDate: flashcardProgressTable.dueDate,
+      ignored: flashcardProgressTable.ignored,
+    })
     .from(flashcardProgressTable)
     .where(inArray(flashcardProgressTable.wordPoolId, poolIds));
 
-  const progressMap = new Map(progressRows.map((r) => [r.wordPoolId, r.dueDate]));
+  const progressMap = new Map(progressRows.map((r) => [r.wordPoolId, r]));
 
-  // Partition the pool into three buckets
+  // Partition the pool into three buckets (ignored cards are excluded entirely)
   const dueNowIds: number[] = [];                                   // dueDate <= today
   const newIds: number[] = [];                                      // never reviewed
   const soonDue: { id: number; dueDate: string }[] = [];           // dueDate > today
 
   for (const id of poolIds) {
-    const due = progressMap.get(id);
-    if (due === undefined) {
+    const prog = progressMap.get(id);
+    if (prog === undefined) {
       newIds.push(id);
-    } else if (due <= today) {
+    } else if (prog.ignored) {
+      // excluded from all session buckets
+    } else if (prog.dueDate <= today) {
       dueNowIds.push(id);
     } else {
-      soonDue.push({ id, dueDate: due });
+      soonDue.push({ id, dueDate: prog.dueDate });
     }
   }
 
@@ -237,6 +243,50 @@ router.post("/flashcards/review", async (req, res): Promise<void> => {
     easeFactor: next.easeFactor,
     dueDate,
   });
+});
+
+/**
+ * POST /flashcards/ignore
+ * Body: { wordPoolId: number }
+ * Marks a word as permanently ignored — excluded from all future sessions.
+ * The word stays in the pool (for distractor purposes) but is never pulled as
+ * a question again. Safe to call multiple times (idempotent).
+ */
+router.post("/flashcards/ignore", async (req, res): Promise<void> => {
+  const { wordPoolId } = req.body ?? {};
+  if (typeof wordPoolId !== "number" || !Number.isInteger(wordPoolId)) {
+    res.status(400).json({ error: "wordPoolId (integer) is required" });
+    return;
+  }
+
+  const [existing] = await db
+    .select({ id: flashcardProgressTable.id })
+    .from(flashcardProgressTable)
+    .where(eq(flashcardProgressTable.wordPoolId, wordPoolId))
+    .limit(1);
+
+  const now = new Date();
+  if (existing) {
+    await db
+      .update(flashcardProgressTable)
+      .set({ ignored: true, updatedAt: now })
+      .where(eq(flashcardProgressTable.id, existing.id));
+  } else {
+    // No review history yet — create a row just to mark it ignored.
+    // Use a far-future dueDate as a placeholder (the field is required).
+    await db.insert(flashcardProgressTable).values({
+      wordPoolId,
+      streak: 0,
+      intervalDays: 0,
+      easeFactor: 2.5,
+      reps: 0,
+      dueDate: "9999-12-31",
+      ignored: true,
+      lastReviewedAt: now,
+    });
+  }
+
+  res.json({ wordPoolId, ignored: true });
 });
 
 export default router;
