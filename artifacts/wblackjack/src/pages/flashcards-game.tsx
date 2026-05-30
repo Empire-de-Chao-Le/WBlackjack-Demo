@@ -166,7 +166,7 @@ export default function FlashcardsGame() {
     } else {
       // Append a duplicate of this question (new random direction)
       if (pool && pool.length >= 4) {
-        const dupType: "tl-en" | "en-tl" = Math.random() < 0.5 ? "tl-en" : "en-tl";
+        const dupType: "tl-en" | "en-tl" = q.type === "tl-en" ? "en-tl" : "tl-en";
         const dup = buildQuestion(q.entry, dupType, pool, false);
         setQuestions((qs) => [...qs, dup]);
       }
