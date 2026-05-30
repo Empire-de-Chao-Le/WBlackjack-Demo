@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db, wordPoolTable, vocabTable, songsTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -40,6 +40,20 @@ export async function mergeVocabIntoWordPool(
   await db.insert(wordPoolTable).values(toInsert);
   return toInsert.length;
 }
+
+/**
+ * GET /word-pool/stats
+ * Returns the word count per language: [{language, count}]
+ */
+router.get("/word-pool/stats", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({ language: wordPoolTable.language, count: sql<number>`count(*)::int` })
+    .from(wordPoolTable)
+    .groupBy(wordPoolTable.language)
+    .orderBy(wordPoolTable.language);
+
+  res.json(rows.map((r) => ({ language: r.language, count: r.count })));
+});
 
 /**
  * GET /word-pool/:language
