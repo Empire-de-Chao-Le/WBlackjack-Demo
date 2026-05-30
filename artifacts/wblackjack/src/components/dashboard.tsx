@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useListSongs,
   useListArtists,
@@ -98,7 +98,7 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
   const updateSong = useUpdateSong();
   const deleteSong = useDeleteSong();
 
-  const filteredSongs = (() => {
+  const filteredSongs = useMemo(() => {
     let result = search.trim()
       ? songs?.filter(
           (s) =>
@@ -119,7 +119,7 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
       );
     }
     return result;
-  })();
+  }, [songs, search, sort]);
 
   useEffect(() => {
     onFilteredSongsChange?.(filteredSongs?.map((s) => s.id) ?? []);
