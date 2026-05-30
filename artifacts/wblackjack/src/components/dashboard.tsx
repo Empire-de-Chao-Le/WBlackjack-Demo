@@ -98,17 +98,28 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
   const updateSong = useUpdateSong();
   const deleteSong = useDeleteSong();
 
-  const filteredSongs = search.trim()
-    ? songs?.filter(
-        (s) =>
-          normalizeString(s.title.toLowerCase()).includes(
-            normalizeString(search.toLowerCase())
-          ) ||
-          normalizeString(s.artist.toLowerCase()).includes(
-            normalizeString(search.toLowerCase())
-          )
-      )
-    : songs;
+  const filteredSongs = (() => {
+    let result = search.trim()
+      ? songs?.filter(
+          (s) =>
+            normalizeString(s.title.toLowerCase()).includes(
+              normalizeString(search.toLowerCase())
+            ) ||
+            normalizeString(s.artist.toLowerCase()).includes(
+              normalizeString(search.toLowerCase())
+            )
+        )
+      : songs;
+    if (result && (sort === "title_asc" || sort === "title_desc")) {
+      const dir = sort === "title_asc" ? 1 : -1;
+      result = [...result].sort((a, b) =>
+        normalizeString(a.title.toLowerCase()).localeCompare(
+          normalizeString(b.title.toLowerCase())
+        ) * dir
+      );
+    }
+    return result;
+  })();
 
   useEffect(() => {
     onFilteredSongsChange?.(filteredSongs?.map((s) => s.id) ?? []);
