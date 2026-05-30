@@ -584,7 +584,7 @@ export default function KaraokeGame() {
                   data-testid={`btn-word-${i + 1}`}
                   disabled={word === "***"}
                 >
-                  <span className={`absolute ${numCorner} text-[11px] font-black tracking-widest ${word === "***" ? "opacity-30" : "opacity-60"}`}>{i + 1}</span>
+                  <span className="absolute top-1.5 right-2 font-black tracking-widest opacity-60 text-[14px]">{i + 1}</span>
                   <span className="text-xl font-bold leading-none">{word === "***" ? "···" : word}</span>
                 </Button>
               );
