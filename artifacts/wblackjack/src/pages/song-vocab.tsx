@@ -58,8 +58,8 @@ export default function SongVocab() {
               key={entry.id}
               className="flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
             >
-              <span className="font-medium text-foreground text-[18px]">{entry.phrase}</span>
-              <span className="text-muted-foreground text-right ml-6 text-[17px]">
+              <span className="font-medium text-foreground text-[20px]">{entry.phrase}</span>
+              <span className="text-muted-foreground text-right ml-6 text-[20px]">
                 {entry.translation}
               </span>
             </div>
