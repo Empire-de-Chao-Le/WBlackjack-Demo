@@ -226,11 +226,6 @@ export default function InternationalFlashcards() {
         <span className="shrink-0 text-xs font-medium text-muted-foreground">🌍</span>
       </div>
 
-      {/* Language badge */}
-      <p className="text-xs font-medium text-muted-foreground text-center mb-3 uppercase tracking-widest">
-        {currentQ.entry.language}
-      </p>
-
       {/* Question card */}
       <button
         onClick={handleQuestionCardClick}
