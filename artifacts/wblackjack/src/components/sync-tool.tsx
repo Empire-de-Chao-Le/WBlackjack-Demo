@@ -234,12 +234,17 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== "Space") return;
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       )
         return;
+      if (e.code === "Backspace") {
+        e.preventDefault();
+        if (!showExitConfirm) handleUndo();
+        return;
+      }
+      if (e.code !== "Space") return;
       e.preventDefault();
       if (isPaused || showExitConfirm) return;
       if (!isDone) {
