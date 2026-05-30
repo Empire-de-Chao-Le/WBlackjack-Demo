@@ -652,6 +652,8 @@ export default function ExercisesGame() {
   const [key, setKey] = useState(0);
   const [ttsOn, setTtsOn] = useState(_ttsEnabled);
   const [gaveUp, setGaveUp] = useState(false);
+  const [score, setScore] = useState(0);
+  const [sessionDone, setSessionDone] = useState(false);
 
   const toggleTts = () => {
     _ttsEnabled = !_ttsEnabled;
@@ -665,14 +667,18 @@ export default function ExercisesGame() {
   }, [lyrics, vocab]);
 
   const handleContinue = async () => {
+    const solved = !gaveUp;
     setGaveUp(false);
     if (lesson < 9) {
+      if (solved) setScore((s) => s + 1);
       setLesson((prev) => prev + 1);
       setKey((k) => k + 1);
     } else {
+      const finalScore = score + (solved ? 1 : 0);
+      setScore(finalScore);
       await recordPlay.mutateAsync({ id });
       queryClient.invalidateQueries({ queryKey: getGetSongQueryKey(id) });
-      setLocation(`/song/${id}`);
+      setSessionDone(true);
     }
   };
 
@@ -684,6 +690,32 @@ export default function ExercisesGame() {
       <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 p-8">
         <p className="text-muted-foreground text-center">No lyrics found — add lyrics from the Song Lab to play exercises.</p>
         <Link href={`/song/${id}`}><Button variant="outline">Back to Song</Button></Link>
+      </div>
+    );
+
+  if (sessionDone)
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-8 p-8 max-w-lg mx-auto w-full">
+        <div className="text-center space-y-4">
+          <div className="text-6xl">🎉</div>
+          <h1 className="text-3xl font-bold tracking-tight">Session complete!</h1>
+          <div className="mt-4">
+            <span className="text-7xl font-bold text-primary">{score}</span>
+            <span className="text-4xl font-bold text-muted-foreground">/10</span>
+          </div>
+          <p className="text-muted-foreground text-base mt-2">
+            {score === 10
+              ? "Perfect score! 🏆"
+              : score >= 7
+              ? "Great job! Keep it up."
+              : score >= 4
+              ? "Good effort — keep practising!"
+              : "Every session makes you better."}
+          </p>
+        </div>
+        <Link href={`/song/${id}`} className="w-full mt-4">
+          <Button size="lg" className="w-full h-14 text-lg font-bold">Back to Song</Button>
+        </Link>
       </div>
     );
 
