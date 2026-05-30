@@ -146,6 +146,9 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
   );
   const [correct, setCorrect] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const placedRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const targetWords = tokenize(lesson.line.original);
   useContinueOnKey(correct, onContinue);
   useEffect(() => { if (correct) speak(lesson.line.original, songLanguage); }, [correct]);
@@ -169,6 +172,46 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
     setPool((prev) => prev.map((p) => p.id === poolId ? { ...p, used: false } : p));
   };
 
+  const findHoveredIndex = (clientX: number, clientY: number): number | null => {
+    for (let j = 0; j < placedRefs.current.length; j++) {
+      const el = placedRefs.current[j];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) return j;
+    }
+    return null;
+  };
+
+  const handlePlacedPointerDown = (e: React.PointerEvent<HTMLButtonElement>, idx: number) => {
+    if (correct) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragIndex(idx);
+    setDragOverIndex(idx);
+  };
+
+  const handlePlacedPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (dragIndex === null) return;
+    const hovered = findHoveredIndex(e.clientX, e.clientY);
+    if (hovered !== null && hovered !== dragOverIndex) setDragOverIndex(hovered);
+  };
+
+  const handlePlacedPointerUp = (idx: number) => {
+    if (dragIndex !== null) {
+      if (dragOverIndex !== null && dragOverIndex !== dragIndex) {
+        setPlaced((prev) => {
+          const next = [...prev];
+          const [removed] = next.splice(dragIndex, 1);
+          next.splice(dragOverIndex, 0, removed);
+          return next;
+        });
+      } else {
+        handleRemoveWord(idx);
+      }
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <p className="text-base text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
@@ -178,7 +221,18 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
           : placed.length === 0
             ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
             : placed.map(({ word }, i) => (
-                <button key={i} onClick={() => handleRemoveWord(i)} className="px-4 py-2 rounded-lg bg-primary/20 border border-primary/40 text-white font-medium hover:bg-primary/30 transition-colors text-[20px]" data-testid={`placed-word-${i}`}>{word}</button>
+                <button
+                  key={i}
+                  ref={(el) => { placedRefs.current[i] = el; }}
+                  onPointerDown={(e) => handlePlacedPointerDown(e, i)}
+                  onPointerMove={handlePlacedPointerMove}
+                  onPointerUp={() => handlePlacedPointerUp(i)}
+                  className={`px-4 py-2 rounded-lg border text-white font-medium transition-colors text-[20px] touch-none select-none
+                    ${dragIndex === i ? "bg-primary/10 border-primary/20 opacity-50 scale-95" : dragOverIndex === i && dragIndex !== null ? "bg-primary/40 border-primary/70 scale-105" : "bg-primary/20 border-primary/40 hover:bg-primary/30"}`}
+                  data-testid={`placed-word-${i}`}
+                >
+                  {word}
+                </button>
               ))
         }
       </div>
