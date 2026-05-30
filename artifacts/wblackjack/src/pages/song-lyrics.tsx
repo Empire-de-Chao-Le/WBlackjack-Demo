@@ -26,29 +26,26 @@ export default function SongLyrics() {
           <ArrowLeft className="w-7 h-7" />
         </button>
         <div>
-          <h1 className="text-xl font-bold">Lyrics</h1>
+          <h1 className="font-bold text-[19px]">Lyrics</h1>
           {song && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-[16px]">
               {song.artist} — {song.title}
             </p>
           )}
         </div>
       </div>
-
       {isLoading && (
         <p className="text-center text-muted-foreground mt-8">Loading…</p>
       )}
-
       {!isLoading && (!lyrics || lyrics.length === 0) && (
         <p className="text-center text-muted-foreground mt-8">
           No lyrics added for this song yet.
         </p>
       )}
-
       {lyrics && lyrics.length > 0 && (
         <div className="flex flex-col gap-1">
           {lyrics.map((line) => (
-            <p key={line.lineIndex} className="text-[20px] leading-snug text-foreground">
+            <p key={line.lineIndex} className="text-foreground text-[23px]">
               {line.original}
             </p>
           ))}
