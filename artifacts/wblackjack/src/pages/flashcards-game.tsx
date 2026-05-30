@@ -181,6 +181,7 @@ export default function FlashcardsGame() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
+  const [confirmingIgnore, setConfirmingIgnore] = useState(false);
 
   // Ref kept in sync every render so click handlers never close over stale length
   const questionsRef = useRef<Question[]>([]);
@@ -214,6 +215,9 @@ export default function FlashcardsGame() {
       setSessionDone(true);
     }
   }, [currentIdx, questions.length]);
+
+  // Dismiss the confirmation prompt whenever the card changes.
+  useEffect(() => { setConfirmingIgnore(false); }, [currentIdx]);
 
   const goBack = () => {
     try { sessionStorage.setItem("home_return_tab", "languages"); } catch {}
@@ -275,7 +279,11 @@ export default function FlashcardsGame() {
     }
   };
 
-  const handleIgnore = () => {
+  // First click arms the confirmation; second click (via handleIgnoreConfirm) executes.
+  const handleIgnore = () => setConfirmingIgnore(true);
+
+  const handleIgnoreConfirm = () => {
+    setConfirmingIgnore(false);
     const q = questionsRef.current[currentIdx];
     if (!q) return;
     const entryId = q.entry.id;
@@ -407,14 +415,31 @@ export default function FlashcardsGame() {
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <button
-          onClick={handleIgnore}
-          className="shrink-0 p-2 rounded-xl bg-muted text-muted-foreground hover:bg-red-500 hover:text-white transition-colors"
-          aria-label="Ignore this card forever"
-          title="Ignore — never show this card again"
-        >
-          <Ban className="w-5 h-5" />
-        </button>
+        {confirmingIgnore ? (
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setConfirmingIgnore(false)}
+              className="px-3 py-1.5 rounded-xl text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleIgnoreConfirm}
+              className="px-3 py-1.5 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+            >
+              Ignore
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleIgnore}
+            className="shrink-0 p-2 rounded-xl bg-muted text-muted-foreground hover:bg-red-500 hover:text-white transition-colors"
+            aria-label="Ignore this card forever"
+            title="Ignore — never show this card again"
+          >
+            <Ban className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Question card */}
