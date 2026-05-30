@@ -20,6 +20,7 @@ export default function SongPage() {
         <Link href="/" className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors" data-testid="link-back">
           <ArrowLeft className="w-7 h-7" />
         </Link>
+        <span className="text-5xl leading-none">{getLanguageFlag(song.language)}</span>
         <button
           onClick={() => setLocation(`/song/${id}/edit`)}
           className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
@@ -30,7 +31,6 @@ export default function SongPage() {
         </button>
       </div>
       <div className="text-center space-y-2">
-        <div className="text-6xl mb-2">{getLanguageFlag(song.language)}</div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground" data-testid="text-song-title">{song.title}</h1>
         <p className="text-[#a39daf] text-[24px] font-bold">{song.artist}</p>
       </div>
