@@ -152,11 +152,6 @@ function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
           strokeLinecap="round"
           fill="none"
         />
-        {/* Filled arrowhead: tip at center (12,12), body extends left-up against arrival direction */}
-        <polygon
-          points="12,12 8.33,13.33 10.03,8.63"
-          fill="#8c3cdd"
-        />
       </svg>
     </span>
   );
