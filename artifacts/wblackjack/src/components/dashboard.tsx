@@ -255,49 +255,85 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
               {/* Right column: indicator (top) + delete (bottom) */}
               <div className="flex flex-col justify-between items-center shrink-0 py-0.5">
                 {/* Indicator */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <button
-                      className="w-5 h-5 rounded-md border-2 border-border transition-transform hover:scale-110 relative"
-                      style={{ backgroundColor: progressColor(song.timesPlayed, song.status) }}
-                      title="Mark as Done"
-                      data-testid={`btn-mark-done-${song.id}`}
-                    >
-                      {song.status === "done" && (
-                        <span className="absolute inset-0 flex items-center justify-center text-black text-[8px] font-black">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Mark "{song.title}" as Done?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will mark the song as completed. This cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          updateSong.mutate(
-                            { id: song.id, data: { status: "done" } },
-                            {
-                              onSuccess: () => {
-                                queryClient.invalidateQueries({
-                                  queryKey: getListSongsQueryKey(),
-                                });
-                              },
-                            }
-                          );
-                        }}
+                {song.status === "done" ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        className="w-5 h-5 rounded-md border-2 border-border transition-transform hover:scale-110 relative"
+                        style={{ backgroundColor: progressColor(song.timesPlayed, song.status) }}
+                        title="Undo Done"
+                        data-testid={`btn-mark-done-${song.id}`}
                       >
-                        Confirm
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <span className="absolute inset-0 flex items-center justify-center text-black text-[8px] font-black">✓</span>
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Undo "Done" for "{song.title}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will move the song back to Active.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            updateSong.mutate(
+                              { id: song.id, data: { status: "active" } },
+                              {
+                                onSuccess: () => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: getListSongsQueryKey(),
+                                  });
+                                },
+                              }
+                            );
+                          }}
+                        >
+                          Move to Active
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        className="w-5 h-5 rounded-md border-2 border-border transition-transform hover:scale-110 relative"
+                        style={{ backgroundColor: progressColor(song.timesPlayed, song.status) }}
+                        title="Mark as Done"
+                        data-testid={`btn-mark-done-${song.id}`}
+                      />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Mark "{song.title}" as Done?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will mark the song as completed.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            updateSong.mutate(
+                              { id: song.id, data: { status: "done" } },
+                              {
+                                onSuccess: () => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: getListSongsQueryKey(),
+                                  });
+                                },
+                              }
+                            );
+                          }}
+                        >
+                          Confirm
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
 
                 {/* Delete */}
                 <AlertDialog>
