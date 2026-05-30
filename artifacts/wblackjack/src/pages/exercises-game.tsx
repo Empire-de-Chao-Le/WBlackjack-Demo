@@ -277,7 +277,6 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <p className="text-base text-muted-foreground text-center shrink-0 mb-3">Reconstruct the original line</p>
       <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-2 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
         {correct
           ? <span className="text-green-400 font-medium text-2xl">{lesson.line.original}</span>
@@ -359,7 +358,6 @@ function LessonTypeB({ lesson, songLanguage, onContinue, isLast }: {
       <div className="shrink-0 rounded-xl bg-card border border-border p-4 text-center mb-2">
         <p className="text-2xl font-bold leading-relaxed">{lesson.line.original}</p>
       </div>
-      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">Choose the correct translation</p>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 mb-3">
         {lesson.options.map((opt, i) => {
           const isCorrectSelected = opt === lesson.line.translation && selected === opt;
@@ -446,10 +444,6 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast }: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">
-        Match each word to its translation
-        <span className="ml-2 text-xs opacity-60">(click or press 1-9 · Tab · 1-9)</span>
-      </p>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 mb-3">
         <div className="flex flex-wrap gap-2">
           {leftItems.map((item, pos) => {
@@ -565,7 +559,6 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast }: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <p className="shrink-0 text-sm text-muted-foreground text-center mb-3">Fill in the missing word</p>
 
       {/* Line display */}
       <div className="shrink-0 rounded-xl bg-card border border-border p-5 text-center mb-4">
