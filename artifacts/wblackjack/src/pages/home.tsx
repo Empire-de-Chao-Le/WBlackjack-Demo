@@ -30,7 +30,13 @@ function GradientDice6({ size = 28 }: { size?: number }) {
 }
 
 export default function Home() {
-  const [tab, setTab] = useState("dashboard");
+  const [tab, setTab] = useState(() => {
+    try {
+      const t = sessionStorage.getItem("home_return_tab");
+      if (t) { sessionStorage.removeItem("home_return_tab"); return t; }
+    } catch {}
+    return "dashboard";
+  });
   const [filteredSongIds, setFilteredSongIds] = useState<number[]>([]);
   const [rolling, setRolling] = useState(false);
   const [faceIdx, setFaceIdx] = useState(5);
