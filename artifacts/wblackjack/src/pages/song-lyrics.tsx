@@ -15,10 +15,6 @@ export default function SongLyrics() {
     query: { enabled: !!id, queryKey: getGetSongLyricsQueryKey(id) },
   });
 
-  const lines = lyrics?.lyrics
-    ? lyrics.lyrics.split("\n")
-    : [];
-
   return (
     <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full">
       <div className="flex items-center gap-3 mb-6">
@@ -43,24 +39,17 @@ export default function SongLyrics() {
         <p className="text-center text-muted-foreground mt-8">Loading…</p>
       )}
 
-      {!isLoading && lines.length === 0 && (
+      {!isLoading && (!lyrics || lyrics.length === 0) && (
         <p className="text-center text-muted-foreground mt-8">
           No lyrics added for this song yet.
         </p>
       )}
 
-      {lines.length > 0 && (
+      {lyrics && lyrics.length > 0 && (
         <div className="flex flex-col gap-1">
-          {lines.map((line, i) => (
-            <p
-              key={i}
-              className={
-                line.trim() === ""
-                  ? "h-4"
-                  : "text-[20px] leading-snug text-foreground"
-              }
-            >
-              {line}
+          {lyrics.map((line) => (
+            <p key={line.lineIndex} className="text-[20px] leading-snug text-foreground">
+              {line.original}
             </p>
           ))}
         </div>
