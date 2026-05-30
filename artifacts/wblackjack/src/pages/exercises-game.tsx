@@ -58,26 +58,40 @@ const LANG_MAP: Record<string, string> = {
 
 function speak(text: string, langName: string) {
   if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
 
   const langCode = LANG_MAP[langName.toLowerCase()] ?? langName;
-  const langPrefix = langCode.split("-")[0];
+  const langPrefix = langCode.split("-")[0].toLowerCase();
 
-  function doSpeak() {
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = langCode;
-    const voices = window.speechSynthesis.getVoices();
-    // Prefer exact match, then same language prefix (e.g. "pl" for "pl-PL")
-    const voice =
-      voices.find((v) => v.lang === langCode) ??
-      voices.find((v) => v.lang.startsWith(langPrefix + "-")) ??
-      voices.find((v) => v.lang.startsWith(langPrefix));
-    if (voice) utt.voice = voice;
-    window.speechSynthesis.speak(utt);
+  function findVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+    // Normalise: lowercase + replace underscore with hyphen so "pl_PL" == "pl-PL"
+    const norm = (s: string) => s.toLowerCase().replace(/_/g, "-");
+    const target = norm(langCode);
+    return (
+      voices.find((v) => norm(v.lang) === target) ??
+      voices.find((v) => norm(v.lang).startsWith(langPrefix + "-")) ??
+      voices.find((v) => norm(v.lang) === langPrefix) ??
+      // Last resort: look for the language name inside the voice's display name
+      voices.find((v) => v.name.toLowerCase().includes(langName.toLowerCase()))
+    );
   }
 
-  // On some browsers (Chrome mobile) voices load asynchronously
-  if (window.speechSynthesis.getVoices().length > 0) {
+  function doSpeak() {
+    const voices = window.speechSynthesis.getVoices();
+    window.speechSynthesis.cancel();
+    // Give cancel() time to flush before queuing the new utterance —
+    // skipping this causes Android Chrome to swallow or mis-route the next speak()
+    setTimeout(() => {
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = langCode;
+      const voice = findVoice(voices);
+      if (voice) utt.voice = voice;
+      window.speechSynthesis.speak(utt);
+    }, 100);
+  }
+
+  // Voices may load asynchronously on first call (Chrome mobile)
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
     doSpeak();
   } else {
     window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
