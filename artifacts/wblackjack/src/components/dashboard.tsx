@@ -118,7 +118,7 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
     <div className="flex flex-col gap-4" data-testid="dashboard-container">
       <div className="flex flex-wrap gap-2 bg-card/60 p-2 rounded-xl border border-border/60 justify-center items-center">
         <button
-          className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+          className="p-2 rounded-lg bg-input hover:bg-muted text-muted-foreground transition-colors"
           onClick={() => setSearchOpen((o) => !o)}
           data-testid="btn-toggle-search"
         >
@@ -189,6 +189,23 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
             <SelectItem value="title_desc">Title Z→A</SelectItem>
           </SelectContent>
         </Select>
+
+        <button
+          className="p-2 rounded-lg bg-input hover:bg-muted text-muted-foreground transition-colors text-sm font-bold leading-none"
+          title="Clear all filters"
+          onClick={() => {
+            setSearchRaw("");
+            setSearchOpen(false);
+            setStatusRaw("all");
+            setLanguageRaw("all");
+            setArtistRaw("all");
+            setSortRaw("date_added_desc");
+            saveFilters({ search: "", status: "all", language: "all", artist: "all", sort: "date_added_desc" });
+          }}
+          data-testid="btn-clear-filters"
+        >
+          ∀
+        </button>
       </div>
       <p className="text-xs text-muted-foreground px-1">
         {filteredSongs?.length ?? 0} songs
