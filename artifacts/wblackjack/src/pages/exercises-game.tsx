@@ -153,6 +153,19 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
   useContinueOnKey(correct, onContinue);
   useEffect(() => { if (correct) speak(lesson.line.original, songLanguage); }, [correct]);
 
+  // Build display order: dragged item removed from source, ghost inserted at dragOverIndex
+  const displayItems = useMemo(() => {
+    type Item = { word: string; poolId: number; origIdx: number; isGhost: boolean };
+    if (dragIndex === null) {
+      return placed.map((p, i): Item => ({ ...p, origIdx: i, isGhost: false }));
+    }
+    const list: Item[] = placed.map((p, i) => ({ ...p, origIdx: i, isGhost: false }));
+    const [dragged] = list.splice(dragIndex, 1);
+    const insertAt = Math.min(dragOverIndex ?? dragIndex, list.length);
+    list.splice(insertAt, 0, { ...dragged, isGhost: true });
+    return list;
+  }, [placed, dragIndex, dragOverIndex]);
+
   const handlePickWord = (id: number, word: string) => {
     if (correct) return;
     setPool((prev) => prev.map((p) => p.id === id ? { ...p, used: true } : p));
@@ -172,7 +185,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
     setPool((prev) => prev.map((p) => p.id === poolId ? { ...p, used: false } : p));
   };
 
-  const findHoveredIndex = (clientX: number, clientY: number): number | null => {
+  const findHoveredDisplayIndex = (clientX: number, clientY: number): number | null => {
     for (let j = 0; j < placedRefs.current.length; j++) {
       const el = placedRefs.current[j];
       if (!el) continue;
@@ -182,20 +195,20 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
     return null;
   };
 
-  const handlePlacedPointerDown = (e: React.PointerEvent<HTMLButtonElement>, idx: number) => {
+  const handlePlacedPointerDown = (e: React.PointerEvent<HTMLButtonElement>, origIdx: number) => {
     if (correct) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    setDragIndex(idx);
-    setDragOverIndex(idx);
+    setDragIndex(origIdx);
+    setDragOverIndex(origIdx);
   };
 
   const handlePlacedPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (dragIndex === null) return;
-    const hovered = findHoveredIndex(e.clientX, e.clientY);
+    const hovered = findHoveredDisplayIndex(e.clientX, e.clientY);
     if (hovered !== null && hovered !== dragOverIndex) setDragOverIndex(hovered);
   };
 
-  const handlePlacedPointerUp = (idx: number) => {
+  const handlePlacedPointerUp = () => {
     if (dragIndex !== null) {
       if (dragOverIndex !== null && dragOverIndex !== dragIndex) {
         setPlaced((prev) => {
@@ -205,7 +218,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
           return next;
         });
       } else {
-        handleRemoveWord(idx);
+        handleRemoveWord(dragIndex);
       }
     }
     setDragIndex(null);
@@ -220,16 +233,19 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
           ? <span className="text-green-400 font-medium text-lg">{lesson.line.original}</span>
           : placed.length === 0
             ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
-            : placed.map(({ word }, i) => (
+            : displayItems.map(({ word, origIdx, isGhost }, displayIdx) => (
                 <button
-                  key={i}
-                  ref={(el) => { placedRefs.current[i] = el; }}
-                  onPointerDown={(e) => handlePlacedPointerDown(e, i)}
+                  key={isGhost ? "ghost" : `item-${origIdx}`}
+                  ref={(el) => { placedRefs.current[displayIdx] = el; }}
+                  onPointerDown={(e) => !isGhost && handlePlacedPointerDown(e, origIdx)}
                   onPointerMove={handlePlacedPointerMove}
-                  onPointerUp={() => handlePlacedPointerUp(i)}
-                  className={`px-4 py-2 rounded-lg border text-white font-medium transition-colors text-[20px] touch-none select-none
-                    ${dragIndex === i ? "bg-primary/10 border-primary/20 opacity-50 scale-95" : dragOverIndex === i && dragIndex !== null ? "bg-primary/40 border-primary/70 scale-105" : "bg-primary/20 border-primary/40 hover:bg-primary/30"}`}
-                  data-testid={`placed-word-${i}`}
+                  onPointerUp={handlePlacedPointerUp}
+                  className={`px-4 py-2 rounded-lg border font-medium text-[20px] touch-none select-none transition-colors
+                    ${isGhost
+                      ? "border-2 border-dashed border-primary/50 bg-primary/10 text-primary/60 cursor-grabbing"
+                      : "bg-primary/20 border-primary/40 text-white hover:bg-primary/30 cursor-grab"
+                    }`}
+                  data-testid={`placed-word-${displayIdx}`}
                 >
                   {word}
                 </button>
