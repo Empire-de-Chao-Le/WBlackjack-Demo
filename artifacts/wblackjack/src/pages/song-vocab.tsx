@@ -25,8 +25,8 @@ export default function SongVocab() {
   });
 
   return (
-    <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full">
+      <div className="flex items-center gap-3 mb-6 shrink-0">
         <button
           onClick={() => setLocation(`/song/${id}`)}
           className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
@@ -43,29 +43,31 @@ export default function SongVocab() {
           )}
         </div>
       </div>
-      {isLoading && (
-        <p className="text-center text-muted-foreground mt-8">Loading…</p>
-      )}
-      {!isLoading && (!vocab || vocab.length === 0) && (
-        <p className="text-center text-muted-foreground mt-8">
-          No vocab added for this song yet.
-        </p>
-      )}
-      {vocab && vocab.length > 0 && (
-        <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
-          {vocab.map((entry) => (
-            <div
-              key={entry.id}
-              className="flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
-            >
-              <span className="font-medium text-foreground text-[20px]">{entry.phrase}</span>
-              <span className="text-muted-foreground text-right ml-6 text-[20px]">
-                {entry.translation}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading && (
+          <p className="text-center text-muted-foreground mt-8">Loading…</p>
+        )}
+        {!isLoading && (!vocab || vocab.length === 0) && (
+          <p className="text-center text-muted-foreground mt-8">
+            No vocab added for this song yet.
+          </p>
+        )}
+        {vocab && vocab.length > 0 && (
+          <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+            {vocab.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
+              >
+                <span className="font-medium text-foreground text-[20px]">{entry.phrase}</span>
+                <span className="text-muted-foreground text-right ml-6 text-[20px]">
+                  {entry.translation}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
