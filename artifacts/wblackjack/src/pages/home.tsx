@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dashboard } from "@/components/dashboard";
 import { SongLab } from "@/components/song-lab";
+import { LanguagesTab } from "@/components/languages-tab";
 import { useLocation } from "wouter";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react";
 
@@ -78,12 +79,16 @@ export default function Home() {
         </button>
       </div>
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1">
-        <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted">
+        <TabsList className="grid w-full grid-cols-3 mb-4 bg-muted">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="languages">Languages</TabsTrigger>
           <TabsTrigger value="song-lab">Song Lab</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard" className="flex-1 flex flex-col">
           <Dashboard onFilteredSongsChange={setFilteredSongIds} />
+        </TabsContent>
+        <TabsContent value="languages" className="flex-1 flex flex-col">
+          <LanguagesTab />
         </TabsContent>
         <TabsContent value="song-lab" className="flex-1 flex flex-col">
           <SongLab onSongAdded={() => setTab("dashboard")} />
