@@ -237,8 +237,11 @@ export default function FlashcardsGame() {
   }, [selectedOption, currentIdx]);
 
   const handleOptionClick = (opt: string) => {
-    if (selectedOption !== null || !questions[currentIdx]) return;
-    const q = questions[currentIdx];
+    // Use the ref (not the state array) so this function is never stale when
+    // called from the keyboard effect — state closes over the questions array
+    // at the time the effect was registered, but the ref is always current.
+    const q = questionsRef.current[currentIdx];
+    if (selectedOption !== null || !q) return;
     const correct = opt === q.correctOption;
     setSelectedOption(opt);
     setIsCorrect(correct);
