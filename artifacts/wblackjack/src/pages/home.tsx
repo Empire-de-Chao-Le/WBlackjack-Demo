@@ -5,6 +5,7 @@ import { SongLab } from "@/components/song-lab";
 import { LanguagesTab } from "@/components/languages-tab";
 import { useLocation } from "wouter";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react";
+import { useListLanguages } from "@workspace/api-client-react";
 
 const DICE_FACES = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -19,12 +20,12 @@ function GradientDice6({ size = 28 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect width="18" height="18" x="3" y="3" rx="2" ry="2" stroke="url(#dice-grad)" />
-      <path d="M16 8h.01" stroke="url(#dice-grad)" />
-      <path d="M8 8h.01" stroke="url(#dice-grad)" />
-      <path d="M16 12h.01" stroke="url(#dice-grad)" />
-      <path d="M8 12h.01" stroke="url(#dice-grad)" />
-      <path d="M16 16h.01" stroke="url(#dice-grad)" />
-      <path d="M8 16h.01" stroke="url(#dice-grad)" />
+      <circle cx="8"  cy="8"  r="1.2" fill="url(#dice-grad)" />
+      <circle cx="16" cy="8"  r="1.2" fill="url(#dice-grad)" />
+      <circle cx="8"  cy="12" r="1.2" fill="url(#dice-grad)" />
+      <circle cx="16" cy="12" r="1.2" fill="url(#dice-grad)" />
+      <circle cx="8"  cy="16" r="1.2" fill="url(#dice-grad)" />
+      <circle cx="16" cy="16" r="1.2" fill="url(#dice-grad)" />
     </svg>
   );
 }
@@ -43,8 +44,14 @@ export default function Home() {
   const rollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [, setLocation] = useLocation();
 
+  const { data: languages } = useListLanguages();
+
   const DiceIcon = DICE_FACES[faceIdx];
-  const canRoll = tab === "dashboard" && filteredSongIds.length > 0 && !rolling;
+
+  const canRoll =
+    !rolling &&
+    ((tab === "dashboard" && filteredSongIds.length > 0) ||
+     (tab === "languages" && !!languages && languages.length > 0));
 
   const handleDiceClick = () => {
     if (!canRoll) return;
@@ -54,12 +61,20 @@ export default function Home() {
     }, 70);
     setTimeout(() => {
       if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
-      const randomId = filteredSongIds[Math.floor(Math.random() * filteredSongIds.length)];
       setRolling(false);
       setFaceIdx(5);
-      setLocation(`/song/${randomId}`);
+
+      if (tab === "languages" && languages && languages.length > 0) {
+        const randomLang = languages[Math.floor(Math.random() * languages.length)];
+        setLocation(`/flashcards/${encodeURIComponent(randomLang)}`);
+      } else if (tab === "dashboard" && filteredSongIds.length > 0) {
+        const randomId = filteredSongIds[Math.floor(Math.random() * filteredSongIds.length)];
+        setLocation(`/song/${randomId}`);
+      }
     }, 600);
   };
+
+  const inactive = !canRoll && !rolling;
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col p-4 max-w-5xl mx-auto w-full">
@@ -67,15 +82,15 @@ export default function Home() {
         <h1 className="text-3xl font-bold text-center text-primary-foreground tracking-tight">WBlackjack</h1>
         <button
           onClick={handleDiceClick}
-          disabled={!canRoll}
+          disabled={inactive}
           className={`transition-all duration-150 rounded-lg p-1 ${
-            tab !== "dashboard"
+            inactive
               ? "opacity-30 cursor-default pointer-events-none"
               : rolling
               ? "text-primary"
-              : "hover:bg-muted"
+              : "hover:bg-muted cursor-pointer"
           }`}
-          aria-label="Random song"
+          aria-label={tab === "languages" ? "Random language flashcards" : "Random song"}
         >
           {rolling ? (
             <DiceIcon className="w-7 h-7 animate-spin" />
