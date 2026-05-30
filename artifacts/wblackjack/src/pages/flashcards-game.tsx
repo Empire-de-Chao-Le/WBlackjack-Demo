@@ -150,6 +150,13 @@ export default function FlashcardsGame() {
     }
   }, [pool]);
 
+  // Detect session end with always-fresh state — avoids stale closure on currentIdx/questions.length
+  useEffect(() => {
+    if (questions.length > 0 && currentIdx >= questions.length) {
+      setSessionDone(true);
+    }
+  }, [currentIdx, questions.length]);
+
   const goBack = () => {
     try { sessionStorage.setItem("home_return_tab", "languages"); } catch {}
     setLocation("/");
@@ -179,15 +186,10 @@ export default function FlashcardsGame() {
 
   const handleQuestionCardClick = () => {
     if (selectedOption === null) return;
-    const nextIdx = currentIdx + 1;
-    // Use ref so we always read the latest length even if a duplicate was just appended
-    if (nextIdx >= questionsRef.current.length) {
-      setSessionDone(true);
-    } else {
-      setCurrentIdx(nextIdx);
-      setSelectedOption(null);
-      setIsCorrect(null);
-    }
+    // Always advance — the useEffect above detects when we've gone past the end
+    setCurrentIdx((prev) => prev + 1);
+    setSelectedOption(null);
+    setIsCorrect(null);
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
