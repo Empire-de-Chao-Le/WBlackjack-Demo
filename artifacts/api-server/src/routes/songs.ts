@@ -84,8 +84,8 @@ router.get("/songs", async (req, res): Promise<void> => {
     case "date_added_asc": orderBy = asc(songsTable.dateAdded); break;
     case "last_played_desc": orderBy = desc(songsTable.lastPlayed); break;
     case "last_played_asc": orderBy = asc(songsTable.lastPlayed); break;
-    case "title_asc": orderBy = asc(songsTable.title); break;
-    case "title_desc": orderBy = desc(songsTable.title); break;
+    case "title_asc": orderBy = sql`unaccent(lower(${songsTable.title})) ASC`; break;
+    case "title_desc": orderBy = sql`unaccent(lower(${songsTable.title})) DESC`; break;
     default: orderBy = desc(songsTable.dateAdded); break;
   }
 
