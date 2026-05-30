@@ -554,8 +554,8 @@ export default function ExercisesGame() {
   return (
     <div className="h-full flex flex-col bg-background p-4 max-w-lg mx-auto w-full overflow-hidden">
       <div className="flex justify-between items-center mb-4 shrink-0">
-        <Link href={`/song/${id}`} className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground" data-testid="link-back">
-          <ArrowLeft className="w-6 h-6" />
+        <Link href={`/song/${id}`} className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors" data-testid="link-back">
+          <ArrowLeft className="w-7 h-7" />
         </Link>
         <div className="font-bold text-primary bg-primary/10 px-4 py-1 rounded-full border border-primary/20">
           Lesson {lesson + 1} / 10

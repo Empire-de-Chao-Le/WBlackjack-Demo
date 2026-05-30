@@ -463,10 +463,10 @@ export default function KaraokeGame() {
       <div className="flex justify-between items-center px-4 py-3 border-b border-border/50 shrink-0">
         <Link
           href={`/song/${id}/karaoke`}
-          className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+          className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
           data-testid="link-back"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-7 h-7" />
         </Link>
         <div className="flex gap-4 text-sm font-bold">
           <span className="text-muted-foreground">

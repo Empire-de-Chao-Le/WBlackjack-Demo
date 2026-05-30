@@ -9,8 +9,8 @@ export default function KaraokePicker() {
   return (
     <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-8">
       <div className="flex items-center gap-4">
-        <Link href={`/song/${id}`} className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" data-testid="link-back">
-          <ArrowLeft className="w-6 h-6" />
+        <Link href={`/song/${id}`} className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors" data-testid="link-back">
+          <ArrowLeft className="w-7 h-7" />
         </Link>
         <h1 className="text-xl font-bold">Select Difficulty</h1>
       </div>

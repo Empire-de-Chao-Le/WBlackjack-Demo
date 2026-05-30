@@ -17,16 +17,16 @@ export default function SongPage() {
   return (
     <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-4">
       <div className="flex items-center justify-between">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground transition-colors" data-testid="link-back">
-          <ArrowLeft className="w-6 h-6" />
+        <Link href="/" className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors" data-testid="link-back">
+          <ArrowLeft className="w-7 h-7" />
         </Link>
         <button
           onClick={() => setLocation(`/song/${id}/edit`)}
-          className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+          className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
           aria-label="Edit song"
           data-testid="btn-edit-song"
         >
-          <Pencil className="w-5 h-5" />
+          <Pencil className="w-7 h-7" />
         </button>
       </div>
       <div className="text-center space-y-2">

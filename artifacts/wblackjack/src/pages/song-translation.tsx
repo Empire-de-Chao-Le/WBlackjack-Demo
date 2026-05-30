@@ -20,10 +20,10 @@ export default function SongTranslation() {
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={() => setLocation(`/song/${id}`)}
-          className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+          className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
           aria-label="Back"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-7 h-7" />
         </button>
         <div>
           <h1 className="text-xl font-bold">Translation</h1>
