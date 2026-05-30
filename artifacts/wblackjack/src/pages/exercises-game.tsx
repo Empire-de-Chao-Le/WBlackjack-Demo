@@ -181,11 +181,12 @@ function useContinueOnKey(enabled: boolean, onContinue: () => void) {
 
 // ─── Type A: Shuffled Line ────────────────────────────────────────────────────
 
-function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
+function LessonTypeA({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
   lesson: Extract<Lesson, { type: "A" }>;
   songLanguage: string;
   onContinue: () => void;
   isLast: boolean;
+  gaveUp: boolean;
 }) {
   const [placed, setPlaced] = useState<{ word: string; poolId: number }[]>([]);
   const [pool, setPool] = useState<{ word: string; id: number; used: boolean }[]>(
@@ -199,6 +200,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
   const targetWords = tokenize(lesson.line.original);
   useContinueOnKey(correct, onContinue);
   useEffect(() => { if (correct) speak(lesson.line.original, songLanguage); }, [correct]);
+  useEffect(() => { if (gaveUp) setCorrect(true); }, [gaveUp]);
 
   // Build display order: dragged item removed from source, ghost inserted at dragOverIndex
   const displayItems = useMemo(() => {
@@ -331,17 +333,19 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
 
 // ─── Type B: Translate ────────────────────────────────────────────────────────
 
-function LessonTypeB({ lesson, songLanguage, onContinue, isLast }: {
+function LessonTypeB({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
   lesson: Extract<Lesson, { type: "B" }>;
   songLanguage: string;
   onContinue: () => void;
   isLast: boolean;
+  gaveUp: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [wrongFlash, setWrongFlash] = useState<string | null>(null);
   const correct = selected === lesson.line.translation;
   useContinueOnKey(correct, onContinue);
   useEffect(() => { speak(lesson.line.original, songLanguage); }, []);
+  useEffect(() => { if (gaveUp) setSelected(lesson.line.translation); }, [gaveUp]);
 
   const handleSelect = (option: string) => {
     if (correct) return;
@@ -376,11 +380,12 @@ function LessonTypeB({ lesson, songLanguage, onContinue, isLast }: {
 
 // ─── Type C: Word Cloud ───────────────────────────────────────────────────────
 
-function LessonTypeC({ lesson, songLanguage, onContinue, isLast }: {
+function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
   lesson: Extract<Lesson, { type: "C" }>;
   songLanguage: string;
   onContinue: () => void;
   isLast: boolean;
+  gaveUp: boolean;
 }) {
   const { leftItems, rightItems } = lesson;
   const [selectedLeftPos, setSelectedLeftPos] = useState<number | null>(null);
@@ -391,6 +396,9 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast }: {
   useContinueOnKey(allMatched, onContinue);
   const stateRef = useRef({ selectedLeftPos, matchedIds, kbPhase });
   useEffect(() => { stateRef.current = { selectedLeftPos, matchedIds, kbPhase }; });
+  useEffect(() => {
+    if (gaveUp) setMatchedIds(new Set([...leftItems.map((i) => i.id), ...rightItems.map((i) => i.id)]));
+  }, [gaveUp]);
 
   const handleLeftClick = (pos: number) => {
     if (matchedIds.has(leftItems[pos].id)) return;
@@ -480,11 +488,12 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast }: {
 
 // ─── Type D: Missing Word ─────────────────────────────────────────────────────
 
-function LessonTypeD({ lesson, songLanguage, onContinue, isLast }: {
+function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
   lesson: Extract<Lesson, { type: "D" }>;
   songLanguage: string;
   onContinue: () => void;
   isLast: boolean;
+  gaveUp: boolean;
 }) {
   const { line, targetWord, blankIndex } = lesson;
   const words = tokenize(line.original);
@@ -497,6 +506,7 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast }: {
 
   const correct = selected !== null && stripPunct(selected).toLowerCase() === stripPunct(targetWord).toLowerCase();
   useContinueOnKey(correct, onContinue);
+  useEffect(() => { if (gaveUp) setSelected(targetWord); }, [gaveUp]);
 
   useEffect(() => {
     let cancelled = false;
@@ -641,6 +651,7 @@ export default function ExercisesGame() {
   const [lesson, setLesson] = useState(0);
   const [key, setKey] = useState(0);
   const [ttsOn, setTtsOn] = useState(_ttsEnabled);
+  const [gaveUp, setGaveUp] = useState(false);
 
   const toggleTts = () => {
     _ttsEnabled = !_ttsEnabled;
@@ -654,6 +665,7 @@ export default function ExercisesGame() {
   }, [lyrics, vocab]);
 
   const handleContinue = async () => {
+    setGaveUp(false);
     if (lesson < 9) {
       setLesson((prev) => prev + 1);
       setKey((k) => k + 1);
@@ -690,8 +702,18 @@ export default function ExercisesGame() {
         <Link href={`/song/${id}`} className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors" data-testid="link-back">
           <ArrowLeft className="w-7 h-7" />
         </Link>
-        <div className="font-bold text-primary bg-primary/10 px-4 py-1 rounded-full border border-primary/20">
-          Lesson {lesson + 1} / 10
+        <div className="flex items-center gap-2">
+          <div className="font-bold text-primary bg-primary/10 px-4 py-1 rounded-full border border-primary/20">
+            Lesson {lesson + 1} / 10
+          </div>
+          <button
+            onClick={() => setGaveUp(true)}
+            disabled={gaveUp}
+            className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground hover:border-destructive hover:text-destructive transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            data-testid="btn-give-up"
+          >
+            Give up
+          </button>
         </div>
         <button
           onClick={toggleTts}
@@ -709,13 +731,13 @@ export default function ExercisesGame() {
 
       <div className="flex-1 min-h-0 flex flex-col">
         {currentLesson.type === "A" ? (
-          <LessonTypeA key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
+          <LessonTypeA key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} gaveUp={gaveUp} />
         ) : currentLesson.type === "B" ? (
-          <LessonTypeB key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
+          <LessonTypeB key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} gaveUp={gaveUp} />
         ) : currentLesson.type === "C" ? (
-          <LessonTypeC key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
+          <LessonTypeC key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} gaveUp={gaveUp} />
         ) : (
-          <LessonTypeD key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} />
+          <LessonTypeD key={key} lesson={currentLesson} songLanguage={song.language ?? ""} onContinue={handleContinue} isLast={lesson === 9} gaveUp={gaveUp} />
         )}
       </div>
     </div>
