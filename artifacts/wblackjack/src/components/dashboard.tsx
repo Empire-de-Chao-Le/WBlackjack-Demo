@@ -143,6 +143,12 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
             className="flex-1 min-w-[140px] h-8 text-sm bg-input border-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setSearch("");
+                setSearchOpen(false);
+              }
+            }}
             data-testid="input-search"
           />
         )}
