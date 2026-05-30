@@ -135,6 +135,10 @@ export default function FlashcardsGame() {
   const [score, setScore] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
 
+  // Ref kept in sync every render so click handlers never close over stale length
+  const questionsRef = useRef<Question[]>([]);
+  questionsRef.current = questions;
+
   useEffect(() => {
     if (pool && pool.length >= 4) {
       setQuestions(buildSession(pool));
@@ -176,7 +180,8 @@ export default function FlashcardsGame() {
   const handleQuestionCardClick = () => {
     if (selectedOption === null) return;
     const nextIdx = currentIdx + 1;
-    if (nextIdx >= questions.length) {
+    // Use ref so we always read the latest length even if a duplicate was just appended
+    if (nextIdx >= questionsRef.current.length) {
       setSessionDone(true);
     } else {
       setCurrentIdx(nextIdx);
