@@ -11,7 +11,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Pencil, RefreshCw, Save } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, Pencil, RefreshCw, Save, AlertTriangle } from "lucide-react";
 import { SyncTool } from "@/components/sync-tool";
 import Papa from "papaparse";
 
@@ -46,6 +56,15 @@ export default function SongEdit() {
   const [newLyricsCsvText, setNewLyricsCsvText] = useState<string | null>(null);
   const [newLyricsFileName, setNewLyricsFileName] = useState<string | null>(null);
   const [lyricsError, setLyricsError] = useState<string | null>(null);
+  const [lyricsInputKey, setLyricsInputKey] = useState(0);
+
+  // Mismatch dialog state
+  const [pendingNewRows, setPendingNewRows] = useState<string[][] | null>(null);
+  const [showMismatchDialog, setShowMismatchDialog] = useState(false);
+  const [pendingNewCount, setPendingNewCount] = useState(0);
+
+  // Re-sync with new CSV lines (overrides existing syncLines)
+  const [resyncLines, setResyncLines] = useState<LyricLineInput[] | null>(null);
 
   const [newVocabCsvText, setNewVocabCsvText] = useState<string | null>(null);
   const [newVocabFileName, setNewVocabFileName] = useState<string | null>(null);
@@ -83,10 +102,48 @@ export default function SongEdit() {
         setNewLyricsFileName(null);
         return;
       }
-      setNewLyricsCsvText(text);
-      setNewLyricsFileName(file.name);
+
+      const newCount = parsed.data.length;
+      const oldCount = lyrics?.length ?? 0;
+
+      if (oldCount > 0 && newCount !== oldCount) {
+        // Line count mismatch — show warning dialog
+        setPendingNewRows(parsed.data);
+        setPendingNewCount(newCount);
+        setShowMismatchDialog(true);
+        // Don't accept the file yet
+        setNewLyricsCsvText(null);
+        setNewLyricsFileName(null);
+      } else {
+        // Counts match (or no existing lyrics) — accept immediately
+        setNewLyricsCsvText(text);
+        setNewLyricsFileName(file.name);
+      }
     };
     reader.readAsText(file);
+  };
+
+  const handleMismatchGoBack = () => {
+    setPendingNewRows(null);
+    setShowMismatchDialog(false);
+    setLyricsInputKey((k) => k + 1); // Reset file input
+  };
+
+  const handleMismatchResync = () => {
+    if (!pendingNewRows) return;
+    const lines: LyricLineInput[] = pendingNewRows.map((row, idx) => ({
+      lineIndex: idx,
+      original: row[0] ?? "",
+      translation: row[1] ?? "",
+      distractor1: row[2] ?? "",
+      distractor2: row[3] ?? "",
+      distractor3: row[4] ?? "",
+      distractor4: row[5] ?? "",
+    }));
+    setResyncLines(lines);
+    setPendingNewRows(null);
+    setShowMismatchDialog(false);
+    setIsSyncing(true);
   };
 
   const handleVocabFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,6 +210,7 @@ export default function SongEdit() {
     }
   };
 
+  // Lines used for the SyncTool: new CSV lines (re-sync) or existing lyrics
   const syncLines: LyricLineInput[] = (lyrics ?? []).map((l) => ({
     lineIndex: l.lineIndex,
     original: l.original,
@@ -163,7 +221,9 @@ export default function SongEdit() {
     distractor4: l.distractor4 ?? "",
   }));
 
-  if (isSyncing && song && syncLines.length > 0) {
+  const effectiveSyncLines = resyncLines ?? syncLines;
+
+  if (isSyncing && song && effectiveSyncLines.length > 0) {
     return (
       <SyncTool
         artist={song.artist}
@@ -171,9 +231,9 @@ export default function SongEdit() {
         youtubeUrl={song.youtubeUrl}
         language={song.language}
         existingSongId={song.id}
-        lines={syncLines}
-        onExit={() => setIsSyncing(false)}
-        onSaved={() => setIsSyncing(false)}
+        lines={effectiveSyncLines}
+        onExit={() => { setIsSyncing(false); setResyncLines(null); }}
+        onSaved={() => { setIsSyncing(false); setResyncLines(null); setLocation(`/song/${id}`); }}
       />
     );
   }
@@ -188,8 +248,36 @@ export default function SongEdit() {
     !!newLyricsCsvText ||
     !!newVocabCsvText;
 
+  const oldCount = lyrics?.length ?? 0;
+
   return (
     <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-6">
+      {/* Line-count mismatch dialog */}
+      <AlertDialog open={showMismatchDialog} onOpenChange={(open) => { if (!open) handleMismatchGoBack(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-950">
+              <AlertTriangle className="h-8 w-8 text-yellow-600" strokeWidth={2.5} />
+            </div>
+            <AlertDialogTitle className="text-center">Line count mismatch</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              The new CSV has <strong>{pendingNewCount}</strong> line{pendingNewCount !== 1 ? "s" : ""}, but the existing lyrics have <strong>{oldCount}</strong>.
+              <br /><br />
+              The existing timestamps cannot be applied to a different number of lines. You can go back and use the correct CSV, or start a full Re-Sync to record new timestamps for the new lyrics.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={handleMismatchGoBack} className="flex-1">
+              Go Back
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleMismatchResync} className="flex-1">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Re-Sync
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center gap-3">
         <button
           onClick={() => setLocation(`/song/${id}`)}
@@ -245,8 +333,15 @@ export default function SongEdit() {
         <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Re-upload Files</h2>
 
         <div className="space-y-2">
-          <Label>Lyrics CSV <span className="text-muted-foreground font-normal">(6 cols: orig, trans, d1–d4)</span></Label>
+          <Label>
+            Lyrics CSV{" "}
+            <span className="text-muted-foreground font-normal">(6 cols: orig, trans, d1–d4)</span>
+            {oldCount > 0 && (
+              <span className="text-muted-foreground font-normal"> — current: {oldCount} lines</span>
+            )}
+          </Label>
           <Input
+            key={lyricsInputKey}
             type="file"
             accept=".csv"
             onChange={handleLyricsFile}
