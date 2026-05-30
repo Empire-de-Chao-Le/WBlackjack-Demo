@@ -166,16 +166,20 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
     return list;
   }, [placed, dragIndex, dragOverIndex]);
 
-  const handlePickWord = (id: number, word: string) => {
-    if (correct) return;
-    setPool((prev) => prev.map((p) => p.id === id ? { ...p, used: true } : p));
-    const newPlaced = [...placed, { word, poolId: id }];
-    setPlaced(newPlaced);
+  const checkCorrect = (newPlaced: { word: string; poolId: number }[]) => {
     const stripped = newPlaced.map((p) => stripPunct(p.word));
     const target = targetWords.map(stripPunct);
     if (stripped.length === target.length && stripped.every((w, i) => w.toLowerCase() === target[i].toLowerCase())) {
       setCorrect(true); setFlash(true); setTimeout(() => setFlash(false), 600);
     }
+  };
+
+  const handlePickWord = (id: number, word: string) => {
+    if (correct) return;
+    setPool((prev) => prev.map((p) => p.id === id ? { ...p, used: true } : p));
+    const newPlaced = [...placed, { word, poolId: id }];
+    setPlaced(newPlaced);
+    checkCorrect(newPlaced);
   };
 
   const handleRemoveWord = (idx: number) => {
@@ -211,12 +215,11 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
   const handlePlacedPointerUp = () => {
     if (dragIndex !== null) {
       if (dragOverIndex !== null && dragOverIndex !== dragIndex) {
-        setPlaced((prev) => {
-          const next = [...prev];
-          const [removed] = next.splice(dragIndex, 1);
-          next.splice(dragOverIndex, 0, removed);
-          return next;
-        });
+        const next = [...placed];
+        const [removed] = next.splice(dragIndex, 1);
+        next.splice(dragOverIndex, 0, removed);
+        setPlaced(next);
+        checkCorrect(next);
       } else {
         handleRemoveWord(dragIndex);
       }
