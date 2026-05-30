@@ -105,14 +105,37 @@ function buildQuestion(
   };
 }
 
-const SESSION_SIZE = 10;
+// The device's local calendar date (YYYY-MM-DD). Used so "tomorrow" is real
+// calendar tomorrow in the user's timezone, and due dates sync across devices.
+function localToday(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
-function buildSession(pool: PoolEntry[]): Question[] {
-  const selected = shuffle(pool).slice(0, Math.min(SESSION_SIZE, pool.length));
-  return selected.map((entry) => {
+// Build the session questions from the SRS-ordered card ids. Distractors are
+// still drawn from the whole language pool; direction is randomized per card.
+function buildSessionFromIds(cardIds: number[], pool: PoolEntry[]): Question[] {
+  const byId = new Map(pool.map((e) => [e.id, e]));
+  const questions: Question[] = [];
+  for (const id of cardIds) {
+    const entry = byId.get(id);
+    if (!entry) continue;
     const type: "tl-en" | "en-tl" = Math.random() < 0.5 ? "tl-en" : "en-tl";
-    return buildQuestion(entry, type, pool, true);
-  });
+    questions.push(buildQuestion(entry, type, pool, true));
+  }
+  return questions;
+}
+
+// Record a review result in the DB (fire-and-forget; errors are logged).
+function recordReview(wordPoolId: number, correct: boolean): void {
+  fetch(`/api/flashcards/review`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ wordPoolId, correct, today: localToday() }),
+  }).catch((err) => console.error("Failed to record flashcard review", err));
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -121,7 +144,7 @@ export default function FlashcardsGame() {
   const [, setLocation] = useLocation();
   const language = decodeURIComponent(params?.language ?? "");
 
-  const { data: pool, isLoading } = useQuery({
+  const { data: pool, isLoading: poolLoading } = useQuery({
     queryKey: ["word-pool", language],
     queryFn: async () => {
       const res = await fetch(`/api/word-pool/${encodeURIComponent(language)}`);
@@ -130,6 +153,26 @@ export default function FlashcardsGame() {
     },
     enabled: !!language,
   });
+
+  // SRS session: which cards are due today (plus new cards), in study order.
+  const { data: session, isLoading: sessionLoading } = useQuery({
+    queryKey: ["flashcards-due", language],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/flashcards/due/${encodeURIComponent(language)}?today=${localToday()}`
+      );
+      if (!res.ok) throw new Error("Failed to load due cards");
+      return res.json() as Promise<{
+        cardIds: number[];
+        dueCount: number;
+        newCount: number;
+        totalAvailable: number;
+      }>;
+    },
+    enabled: !!language,
+  });
+
+  const isLoading = poolLoading || sessionLoading;
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -143,15 +186,15 @@ export default function FlashcardsGame() {
   questionsRef.current = questions;
 
   useEffect(() => {
-    if (pool && pool.length >= 4) {
-      setQuestions(buildSession(pool));
+    if (pool && pool.length >= 4 && session) {
+      setQuestions(buildSessionFromIds(session.cardIds, pool));
       setCurrentIdx(0);
       setSelectedOption(null);
       setIsCorrect(null);
       setScore(0);
       setSessionDone(false);
     }
-  }, [pool]);
+  }, [pool, session]);
 
   // Detect session end with always-fresh state — avoids stale closure on currentIdx/questions.length
   useEffect(() => {
@@ -198,16 +241,10 @@ export default function FlashcardsGame() {
     // TTS: always read the TL phrase
     speak(q.tlText, language);
 
-    if (correct) {
-      if (q.isOriginal) setScore((s) => s + 1);
-    } else {
-      // Append a duplicate of this question (new random direction)
-      if (pool && pool.length >= 4) {
-        const dupType: "tl-en" | "en-tl" = q.type === "tl-en" ? "en-tl" : "tl-en";
-        const dup = buildQuestion(q.entry, dupType, pool, false);
-        setQuestions((qs) => [...qs, dup]);
-      }
-    }
+    if (correct) setScore((s) => s + 1);
+
+    // Persist the SRS review (updates streak + due date in the DB).
+    recordReview(q.entry.id, correct);
   };
 
   const handleQuestionCardClick = () => {
@@ -219,7 +256,7 @@ export default function FlashcardsGame() {
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (isLoading || (pool && pool.length >= 4 && questions.length === 0)) {
+  if (isLoading) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading…</p>
@@ -240,6 +277,26 @@ export default function FlashcardsGame() {
     );
   }
 
+  // ── All caught up (nothing due, no new cards) ────────────────────────────────
+  if (!sessionDone && session && session.cardIds.length === 0) {
+    return (
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-5 p-6 text-foreground text-center">
+        <p className="text-7xl">✅</p>
+        <h2 className="text-2xl font-bold">All caught up!</h2>
+        <p className="text-muted-foreground max-w-xs">
+          No {language} cards are due right now. Come back later — your reviews are
+          scheduled and synced across your devices.
+        </p>
+        <button
+          onClick={goBack}
+          className="mt-2 px-8 py-4 rounded-2xl bg-[#8c3cdd] text-white font-bold text-lg hover:bg-[#7b2fcc] active:scale-95 transition-all"
+        >
+          Back to Languages
+        </button>
+      </div>
+    );
+  }
+
   // ── Session done ───────────────────────────────────────────────────────────
   if (sessionDone) {
     return (
@@ -249,7 +306,7 @@ export default function FlashcardsGame() {
         <div className="flex items-end gap-1">
           <span className="text-7xl font-bold text-primary">{score}</span>
           <span className="text-3xl font-semibold text-muted-foreground mb-2">
-            /{Math.min(SESSION_SIZE, questions.filter((q) => q.isOriginal).length)}
+            /{questions.length}
           </span>
         </div>
         <button

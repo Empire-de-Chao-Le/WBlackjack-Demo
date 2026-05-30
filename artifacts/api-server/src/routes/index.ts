@@ -6,6 +6,7 @@ import vocabRouter from "./vocab";
 import autocompleteRouter from "./autocomplete";
 import distractorsRouter from "./distractors";
 import wordPoolRouter from "./word-pool";
+import flashcardsRouter from "./flashcards";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(vocabRouter);
 router.use(autocompleteRouter);
 router.use(distractorsRouter);
 router.use(wordPoolRouter);
+router.use(flashcardsRouter);
 
 export default router;
