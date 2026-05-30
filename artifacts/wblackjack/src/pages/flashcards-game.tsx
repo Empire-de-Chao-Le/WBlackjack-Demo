@@ -241,10 +241,22 @@ export default function FlashcardsGame() {
     // TTS: always read the TL phrase
     speak(q.tlText, language);
 
-    if (correct) setScore((s) => s + 1);
+    // Only the ORIGINAL pull of a card counts: it scores and persists the SRS
+    // review. In-session retries (isOriginal=false) are pure practice — they
+    // never score and never POST, so they don't double-count toward scheduling.
+    if (q.isOriginal) {
+      if (correct) setScore((s) => s + 1);
+      recordReview(q.entry.id, correct);
 
-    // Persist the SRS review (updates streak + due date in the DB).
-    recordReview(q.entry.id, correct);
+      // Missed an original card → re-show it later this session (new random
+      // direction) so the user practices it again before the session ends.
+      // This is the deliberate exception to the once-per-day pull rule.
+      if (!correct && pool && pool.length >= 4) {
+        const dupType: "tl-en" | "en-tl" = q.type === "tl-en" ? "en-tl" : "tl-en";
+        const dup = buildQuestion(q.entry, dupType, pool, false);
+        setQuestions((qs) => [...qs, dup]);
+      }
+    }
   };
 
   const handleQuestionCardClick = () => {
@@ -306,7 +318,7 @@ export default function FlashcardsGame() {
         <div className="flex items-end gap-1">
           <span className="text-7xl font-bold text-primary">{score}</span>
           <span className="text-3xl font-semibold text-muted-foreground mb-2">
-            /{questions.length}
+            /{questions.filter((q) => q.isOriginal).length}
           </span>
         </div>
         <button
