@@ -184,13 +184,13 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast }: {
           : placed.length === 0
             ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
             : placed.map((word, i) => (
-                <button key={i} onClick={() => handleRemoveWord(i)} className="px-4 py-2 rounded-lg bg-primary/20 border border-primary/40 text-white text-base font-medium hover:bg-primary/30 transition-colors" data-testid={`placed-word-${i}`}>{word}</button>
+                <button key={i} onClick={() => handleRemoveWord(i)} className="px-4 py-2 rounded-lg bg-primary/20 border border-primary/40 text-white font-medium hover:bg-primary/30 transition-colors text-[20px]" data-testid={`placed-word-${i}`}>{word}</button>
               ))
         }
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
         {pool.map(({ word, id }) => (
-          <button key={id} onClick={() => handlePickWord(id, word)} className="px-4 py-2.5 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-muted text-foreground text-base font-medium transition-colors" data-testid={`pool-word-${id}`}>{word}</button>
+          <button key={id} onClick={() => handlePickWord(id, word)} className="px-4 py-2.5 rounded-lg bg-card border border-border hover:border-primary/50 hover:bg-muted text-foreground font-medium transition-colors text-[20px]" data-testid={`pool-word-${id}`}>{word}</button>
         ))}
       </div>
       <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!correct} data-testid="btn-continue">
