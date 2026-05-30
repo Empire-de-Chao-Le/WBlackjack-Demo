@@ -185,6 +185,10 @@ export default function FlashcardsGame() {
   const questionsRef = useRef<Question[]>([]);
   questionsRef.current = questions;
 
+  // Ref on the page container — focusing a real DOM node works inside iframes
+  // (unlike window.focus() which browsers block from within frames).
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (pool && pool.length >= 4 && session) {
       setQuestions(buildSessionFromIds(session.cardIds, pool));
@@ -208,9 +212,10 @@ export default function FlashcardsGame() {
     setLocation("/");
   };
 
-  // Grab focus on mount so keyboard shortcuts work without a prior click
+  // Focus the container element on mount — focusing a real DOM node gives the
+  // iframe window keyboard focus immediately, without needing a mouse click.
   useEffect(() => {
-    try { window.focus(); } catch {}
+    containerRef.current?.focus();
   }, []);
 
   // Keyboard shortcuts: 1-4 pick options, Space/Enter advance question card
@@ -362,7 +367,11 @@ export default function FlashcardsGame() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col p-4 max-w-lg mx-auto w-full">
+    <div
+      ref={containerRef}
+      tabIndex={-1}
+      className="min-h-[100dvh] bg-background text-foreground flex flex-col p-4 max-w-lg mx-auto w-full outline-none"
+    >
       {/* Top row: back + progress bar */}
       <div className="flex items-center gap-3 mb-5 mt-1">
         <button
