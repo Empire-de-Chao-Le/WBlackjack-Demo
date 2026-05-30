@@ -297,25 +297,6 @@ export default function FlashcardsGame() {
     );
   }
 
-  // ── All caught up (nothing due, no new cards) ────────────────────────────────
-  if (!sessionDone && session && session.cardIds.length === 0) {
-    return (
-      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-5 p-6 text-foreground text-center">
-        <p className="text-7xl">✅</p>
-        <h2 className="text-2xl font-bold">All caught up!</h2>
-        <p className="text-muted-foreground max-w-xs">
-          No {language} cards are due right now. Come back later — your reviews are
-          scheduled and synced across your devices.
-        </p>
-        <button
-          onClick={goBack}
-          className="mt-2 px-8 py-4 rounded-2xl bg-[#8c3cdd] text-white font-bold text-lg hover:bg-[#7b2fcc] active:scale-95 transition-all"
-        >
-          Back to Languages
-        </button>
-      </div>
-    );
-  }
 
   // ── Session done ───────────────────────────────────────────────────────────
   if (sessionDone) {
