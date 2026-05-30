@@ -8,7 +8,7 @@ import {
   getGetSongLyricsQueryKey,
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { tokenize } from "@/lib/helpers";
@@ -46,6 +46,11 @@ function stripPunct(word: string): string {
   return word.replace(/[^\p{L}\p{N}]/gu, "");
 }
 
+// Module-level mute flag — persisted in localStorage, checked by speak()
+let _ttsEnabled: boolean = (() => {
+  try { return localStorage.getItem("tts_enabled") !== "false"; } catch { return true; }
+})();
+
 const LANG_MAP: Record<string, string> = {
   polish: "pl-PL", french: "fr-FR", spanish: "es-ES", german: "de-DE",
   italian: "it-IT", portuguese: "pt-PT", russian: "ru-RU", japanese: "ja-JP",
@@ -57,6 +62,7 @@ const LANG_MAP: Record<string, string> = {
 };
 
 function speak(text: string, langName: string) {
+  if (!_ttsEnabled) return;
   if (!("speechSynthesis" in window)) return;
 
   const langCode = LANG_MAP[langName.toLowerCase()] ?? langName;
@@ -641,6 +647,13 @@ export default function ExercisesGame() {
   const recordPlay = useRecordPlay();
   const [lesson, setLesson] = useState(0);
   const [key, setKey] = useState(0);
+  const [ttsOn, setTtsOn] = useState(_ttsEnabled);
+
+  const toggleTts = () => {
+    _ttsEnabled = !_ttsEnabled;
+    try { localStorage.setItem("tts_enabled", String(_ttsEnabled)); } catch {}
+    setTtsOn(_ttsEnabled);
+  };
 
   const lessons = useMemo<Lesson[]>(() => {
     if (!lyrics) return [];
@@ -684,7 +697,16 @@ export default function ExercisesGame() {
         <div className="font-bold text-primary bg-primary/10 px-4 py-1 rounded-full border border-primary/20">
           Lesson {lesson + 1} / 10
         </div>
-        <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{badgeLabel}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{badgeLabel}</div>
+          <button
+            onClick={toggleTts}
+            className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
+            aria-label={ttsOn ? "Mute sound" : "Unmute sound"}
+          >
+            {ttsOn ? <Volume2 className="w-7 h-7" /> : <VolumeX className="w-7 h-7" />}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col">
