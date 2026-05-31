@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { getLanguageFlag } from "@/lib/helpers";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 import {
   Dialog,
   DialogContent,
@@ -48,11 +49,12 @@ function WordPoolModal({
   language,
   onClose,
 }: {
-  language: string | null;
+  language: string;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState("");
   const { data: entries, isLoading } = useWordPool(language);
+  useAndroidBack(onClose);
 
   const needle = stripDiacritics(search.trim());
 
@@ -70,15 +72,19 @@ function WordPoolModal({
   const ignoredCount = entries?.filter((e) => e.ignored).length ?? 0;
 
   return (
-    <Dialog
-      open={language !== null}
-      onOpenChange={(open) => { if (!open) { setSearch(""); onClose(); } }}
-    >
-      <DialogContent className="flex flex-col gap-0 p-0 max-h-[85dvh] sm:max-w-lg">
+    <Dialog open onOpenChange={(open) => { if (!open) { setSearch(""); onClose(); } }}>
+      <DialogContent showCloseButton={false} className="flex flex-col gap-0 p-0 max-h-[85dvh] sm:max-w-lg">
         {/* ── header ── */}
-        <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
+        <DialogHeader className="px-4 pt-3 pb-3 shrink-0">
+          <button
+            onClick={() => { setSearch(""); onClose(); }}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors self-start mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back</span>
+          </button>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <span className="text-3xl leading-none">{language ? getLanguageFlag(language) : ""}</span>
+            <span className="text-3xl leading-none">{getLanguageFlag(language)}</span>
             <span className="capitalize">{language}</span>
             {entries && (
               <span className="ml-auto text-sm font-normal text-muted-foreground">
@@ -98,7 +104,6 @@ function WordPoolModal({
               placeholder="Search words or translations…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              autoFocus
             />
           </div>
         </div>
@@ -219,7 +224,7 @@ export function LanguagesTab() {
           );
         })}
       </div>
-      <WordPoolModal language={poolLang} onClose={() => setPoolLang(null)} />
+      {poolLang !== null && <WordPoolModal language={poolLang} onClose={() => setPoolLang(null)} />}
     </>
   );
 }
