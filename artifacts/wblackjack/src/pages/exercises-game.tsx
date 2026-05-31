@@ -610,13 +610,11 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-
       {/* Line display */}
       <div className="shrink-0 rounded-xl bg-card border border-border p-5 text-center mb-4">
-        <p className="text-xl font-semibold leading-relaxed">{lineWithSpaces}</p>
-        <p className="text-sm mt-2" style={{ color: "#fdb8c8" }}>{line.translation}</p>
+        <p className="font-semibold text-[22px]">{lineWithSpaces}</p>
+        <p className="mt-2 text-[18px]" style={{ color: "#fdb8c8" }}>{line.translation}</p>
       </div>
-
       {/* Options */}
       {loadingOptions ? (
         <div className="flex-1 flex items-center justify-center">
@@ -636,13 +634,7 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
               <button
                 key={i}
                 onClick={() => handleSelect(opt)}
-                className={`w-full min-h-14 px-4 py-3 rounded-xl border-2 text-base font-medium transition-all ${
-                  isCorrectSelected
-                    ? "border-green-400 bg-green-400/10 text-green-300"
-                    : isWrong
-                    ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95"
-                    : "border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground"
-                }`}
+                className="w-full min-h-14 px-4 py-3 rounded-xl border-2 font-medium transition-all border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground pl-[10px] pr-[10px] pt-[10px] pb-[10px] text-[20px]"
                 data-testid={`btn-option-${i}`}
               >
                 {opt}
@@ -651,7 +643,6 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
           })}
         </div>
       )}
-
       <Button
         className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed"
         onClick={onContinue}
