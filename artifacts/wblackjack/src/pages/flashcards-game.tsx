@@ -8,6 +8,10 @@ let _ttsEnabled: boolean = (() => {
   try { return localStorage.getItem("tts_enabled") !== "false"; } catch { return true; }
 })();
 
+// Generation counter — incremented on every speak() call so that stale voiceschanged
+// listeners and stale setTimeout callbacks from a previous language become no-ops.
+let _speakGen = 0;
+
 const LANG_MAP: Record<string, string> = {
   polish: "pl-PL", french: "fr-FR", spanish: "es-ES", german: "de-DE",
   italian: "it-IT", portuguese: "pt-PT", russian: "ru-RU", japanese: "ja-JP",
@@ -21,6 +25,7 @@ const LANG_MAP: Record<string, string> = {
 function speak(text: string, langName: string) {
   if (!_ttsEnabled) return;
   if (!("speechSynthesis" in window)) return;
+  const gen = ++_speakGen;
   const langCode = LANG_MAP[langName.toLowerCase().trim()] ?? langName;
   const langPrefix = langCode.split("-")[0].toLowerCase();
   function findVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
@@ -34,9 +39,12 @@ function speak(text: string, langName: string) {
     );
   }
   function doSpeak() {
+    // If a newer speak() call has been made since this one, discard this utterance.
+    if (gen !== _speakGen) return;
     const voices = window.speechSynthesis.getVoices();
     window.speechSynthesis.cancel();
     setTimeout(() => {
+      if (gen !== _speakGen) return;
       const utt = new SpeechSynthesisUtterance(text);
       utt.lang = langCode;
       const voice = findVoice(voices);
