@@ -94,13 +94,12 @@ function findVoice(
   const tagged = voices.map((v) => ({ v, p: parseLangTag(v.lang) }));
   return (
     // 1. alias base + same region — fixes Mandarin "cmn-Hans-CN"/"zh-Hans-CN" vs our "zh-CN"
-    (t.region ? tagged.find((x) => x.p.region === t.region && aliases.includes(x.p.base))?.v : undefined) ??
+    ((t.region ? tagged.find((x) => x.p.region === t.region && aliases.includes(x.p.base))?.v : undefined) ??
     // 2. exact base + same region
     (t.region ? tagged.find((x) => x.p.region === t.region && x.p.base === t.base)?.v : undefined) ??
     // 3. exact base, any region
-    tagged.find((x) => x.p.base === t.base)?.v ??
-    // 4. last resort: the language name appears in the voice's display name
-    voices.find((v) => v.name.toLowerCase().includes(langName.toLowerCase()))
+    tagged.find((x) => x.p.base === t.base)?.v ?? // 4. last resort: the language name appears in the voice's display name
+    voices.find((v) => v.name.toLowerCase().includes(langName.toLowerCase())))
   );
 }
 
@@ -501,9 +500,9 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
             const isSelected = selectedLeftPos === pos;
             const isWrong = isSelected && wrongFlash;
             return (
-              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-red-500 bg-red-500/10 text-red-400 animate-pulse" : isSelected ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
+              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className="flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer pt-[4px] pb-[4px] pl-[10px] pr-[10px]" data-testid={`left-${pos}`}>
                 <span className="text-xs text-muted-foreground shrink-0">{pos + 1}</span>
-                <span>{item.phrase}</span>
+                <span className="text-[20px]">{item.phrase}</span>
               </button>
             );
           })}
@@ -513,9 +512,9 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
           {rightItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             return (
-              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
+              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all pl-[10px] pr-[10px] pt-[4px] pb-[4px] ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
                 <span className="text-xs text-muted-foreground shrink-0">{pos + 1}</span>
-                <span>{item.translation}</span>
+                <span className="text-[20px]">{item.translation}</span>
               </button>
             );
           })}
