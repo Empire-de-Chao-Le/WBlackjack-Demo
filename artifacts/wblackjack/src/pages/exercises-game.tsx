@@ -54,7 +54,7 @@ let _ttsEnabled: boolean = (() => {
 const LANG_MAP: Record<string, string> = {
   polish: "pl-PL", french: "fr-FR", spanish: "es-ES", german: "de-DE",
   italian: "it-IT", portuguese: "pt-PT", russian: "ru-RU", japanese: "ja-JP",
-  chinese: "zh-CN", mandarin: "zh-CN", korean: "ko-KR", dutch: "nl-NL",
+  chinese: "zh-CN", mandarin: "zh-CN", cantonese: "zh-HK", korean: "ko-KR", dutch: "nl-NL",
   swedish: "sv-SE", norwegian: "nb-NO", danish: "da-DK", finnish: "fi-FI",
   czech: "cs-CZ", slovak: "sk-SK", hungarian: "hu-HU", romanian: "ro-RO",
   turkish: "tr-TR", arabic: "ar-SA", hebrew: "he-IL", ukrainian: "uk-UA",

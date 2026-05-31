@@ -6,6 +6,7 @@ export const getLanguageFlag = (lang: string) => {
     'german': '🇩🇪',
     'japanese': '🇯🇵',
     'chinese': '🇨🇳',
+    'cantonese': '🇭🇰',
     'korean': '🇰🇷',
     'arabic': '🇸🇦',
     'russian': '🇷🇺',
