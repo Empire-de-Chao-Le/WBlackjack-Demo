@@ -22,33 +22,80 @@ const LANG_MAP: Record<string, string> = {
   greek: "el-GR", catalan: "ca-ES",
 };
 
+// Splits a BCP-47-ish tag into { base, region }, tolerant of script subtags.
+// e.g. "zh-Hans-CN" -> { base: "zh", region: "cn" }, "cmn-Hans-CN" -> { base: "cmn", region: "cn" }
+function parseLangTag(tag: string): { base: string; region: string | null } {
+  const parts = tag.toLowerCase().replace(/_/g, "-").split("-");
+  const base = parts[0] || "";
+  const region = parts.slice(1).find((p) => /^[a-z]{2}$/.test(p) || /^\d{3}$/.test(p)) ?? null;
+  return { base, region };
+}
+
+// Some TTS engines report Chinese with ISO 639-3 bases (cmn = Mandarin, yue = Cantonese)
+// instead of "zh", and add script subtags (zh-Hans-CN). Treat these as equivalent so the
+// region subtag can disambiguate Mandarin (CN) from Cantonese (HK).
+const BASE_ALIASES: Record<string, string[]> = {
+  zh: ["zh", "cmn", "yue"],
+};
+function baseAliases(base: string): string[] {
+  return BASE_ALIASES[base] ?? [base];
+}
+
+function findVoice(
+  voices: SpeechSynthesisVoice[],
+  langCode: string,
+  langName: string
+): SpeechSynthesisVoice | undefined {
+  const t = parseLangTag(langCode);
+  const aliases = baseAliases(t.base);
+  const tagged = voices.map((v) => ({ v, p: parseLangTag(v.lang) }));
+  return (
+    // 1. alias base + same region — fixes Mandarin "cmn-Hans-CN"/"zh-Hans-CN" vs our "zh-CN"
+    (t.region ? tagged.find((x) => x.p.region === t.region && aliases.includes(x.p.base))?.v : undefined) ??
+    // 2. exact base + same region
+    (t.region ? tagged.find((x) => x.p.region === t.region && x.p.base === t.base)?.v : undefined) ??
+    // 3. exact base, any region
+    tagged.find((x) => x.p.base === t.base)?.v ??
+    // 4. last resort: the language name appears in the voice's display name
+    voices.find((v) => v.name.toLowerCase().includes(langName.toLowerCase()))
+  );
+}
+
+// One-time dump of the device's voice list, so we can see exactly what's installed.
+let _voicesLogged = false;
+function logVoicesOnce(voices: SpeechSynthesisVoice[]) {
+  if (_voicesLogged || voices.length === 0) return;
+  _voicesLogged = true;
+  // eslint-disable-next-line no-console
+  console.log(
+    "[TTS] available voices:\n" +
+      voices
+        .map((v) => `  ${v.name} | ${v.lang} | local=${v.localService} | default=${v.default}`)
+        .join("\n")
+  );
+}
+
 function speak(text: string, langName: string) {
   if (!_ttsEnabled) return;
   if (!("speechSynthesis" in window)) return;
   const gen = ++_speakGen;
   const langCode = LANG_MAP[langName.toLowerCase().trim()] ?? langName;
-  const langPrefix = langCode.split("-")[0].toLowerCase();
-  function findVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
-    const norm = (s: string) => s.toLowerCase().replace(/_/g, "-");
-    const target = norm(langCode);
-    return (
-      voices.find((v) => norm(v.lang) === target) ??
-      voices.find((v) => norm(v.lang).startsWith(langPrefix + "-")) ??
-      voices.find((v) => norm(v.lang) === langPrefix) ??
-      voices.find((v) => v.name.toLowerCase().includes(langName.toLowerCase()))
-    );
-  }
   function doSpeak() {
     // If a newer speak() call has been made since this one, discard this utterance.
     if (gen !== _speakGen) return;
     const voices = window.speechSynthesis.getVoices();
+    logVoicesOnce(voices);
     window.speechSynthesis.cancel();
     setTimeout(() => {
       if (gen !== _speakGen) return;
       const utt = new SpeechSynthesisUtterance(text);
       utt.lang = langCode;
-      const voice = findVoice(voices);
+      const voice = findVoice(voices, langCode, langName);
       if (voice) utt.voice = voice;
+      // eslint-disable-next-line no-console
+      console.log(
+        `[TTS] "${langName}" -> ${langCode} | matched: ${voice ? `${voice.name} (${voice.lang}, local=${voice.localService})` : "NONE — falling back to utt.lang only"}`
+      );
       window.speechSynthesis.speak(utt);
     }, 100);
   }

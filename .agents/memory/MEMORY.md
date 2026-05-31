@@ -1,2 +1,1 @@
-- [WBlackjack architecture](wblackjack-arch.md) — full-stack song learning app; key patterns for db schema, API routes, and frontend hooks
-- [Sync/Karaoke timestamp model](sync-timestamp-model.md) — timestamp[i]=start of line i; record & consume must agree; undo seeks timestamps[newIdx-1]; int column rounding.
+- [TTS in WBlackjack](tts-wblackjack.md) — speak() is duplicated in exercises-game.tsx & flashcards-game.tsx; fix both. Voice matching must handle script subtags (Mandarin=cmn-Hans-CN).
