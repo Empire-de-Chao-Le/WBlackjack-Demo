@@ -190,10 +190,13 @@ export function LanguagesTab() {
           return (
             <div
               key={lang}
-              className="flex flex-col rounded-2xl border border-border bg-card shadow-sm overflow-hidden aspect-square"
+              className="flex flex-col rounded-2xl border border-border shadow-sm overflow-hidden aspect-square bg-[#faf7ff] dark:bg-[#181322] hover:border-primary/30 hover:shadow-md transition-all"
             >
-              {/* top: flag + name + count */}
-              <div className="flex-1 flex flex-col items-center justify-center gap-1 px-3 pt-4 pb-2">
+              {/* Clickable top: flag + name + count starts flashcards */}
+              <button
+                onClick={() => setLocation(`/flashcards/${encodeURIComponent(lang)}`)}
+                className="flex-1 flex flex-col items-center justify-center gap-1 px-3 pt-4 pb-2 hover:bg-primary/5 active:bg-primary/10 transition-colors"
+              >
                 <span className="text-5xl leading-none">{getLanguageFlag(lang)}</span>
                 <span className="text-sm font-semibold capitalize text-foreground">{lang}</span>
                 {count !== undefined && (
@@ -201,24 +204,15 @@ export function LanguagesTab() {
                     {count} {count === 1 ? "word" : "words"}
                   </span>
                 )}
-              </div>
+              </button>
 
-              {/* bottom: action buttons */}
-              <div className="flex border-t border-border">
-                <button
-                  onClick={() => setLocation(`/flashcards/${encodeURIComponent(lang)}`)}
-                  className="flex-1 py-2 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
-                >
-                  Go!
-                </button>
-                <div className="w-px bg-border" />
-                <button
-                  onClick={() => setPoolLang(lang)}
-                  className="flex-1 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-                >
-                  Look
-                </button>
-              </div>
+              {/* Bottom: "Take a look" stretched across the full width */}
+              <button
+                onClick={() => setPoolLang(lang)}
+                className="w-full py-3 text-sm font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border"
+              >
+                Take a look
+              </button>
             </div>
           );
         })}
