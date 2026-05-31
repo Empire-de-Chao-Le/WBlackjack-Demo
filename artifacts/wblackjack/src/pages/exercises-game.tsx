@@ -121,18 +121,13 @@ function logVoicesOnce(voices: SpeechSynthesisVoice[]) {
 function speak(text: string, langName: string) {
   if (!_ttsEnabled) return;
   if (!("speechSynthesis" in window)) return;
-
   const gen = ++_speakGen;
-  const langCode = LANG_MAP[langName.toLowerCase()] ?? langName;
-
+  const langCode = LANG_MAP[langName.toLowerCase().trim()] ?? langName;
   function doSpeak() {
-    // If a newer speak() call has been made since this one, discard this utterance.
     if (gen !== _speakGen) return;
     const voices = window.speechSynthesis.getVoices();
     logVoicesOnce(voices);
     window.speechSynthesis.cancel();
-    // Give cancel() time to flush before queuing the new utterance —
-    // skipping this causes Android Chrome to swallow or mis-route the next speak()
     setTimeout(() => {
       if (gen !== _speakGen) return;
       const utt = new SpeechSynthesisUtterance(text);
@@ -146,14 +141,9 @@ function speak(text: string, langName: string) {
       window.speechSynthesis.speak(utt);
     }, 100);
   }
-
-  // Voices may load asynchronously on first call (Chrome mobile)
   const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    doSpeak();
-  } else {
-    window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
-  }
+  if (voices.length > 0) { doSpeak(); }
+  else { window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true }); }
 }
 
 function buildLessons(lyrics: LyricLine[], vocab: VocabEntry[]): Lesson[] {
@@ -706,6 +696,18 @@ export default function ExercisesGame() {
   const [gaveUp, setGaveUp] = useState(false);
   const [score, setScore] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
+  const [voiceDebug, setVoiceDebug] = useState<string | null>(null);
+
+  const showVoiceDebug = () => {
+    const voices = window.speechSynthesis?.getVoices() ?? [];
+    if (voices.length === 0) {
+      setVoiceDebug("No voices loaded yet — try again after a card plays.");
+      return;
+    }
+    setVoiceDebug(
+      voices.map((v) => `${v.name}\n  lang=${v.lang} local=${v.localService} default=${v.default}`).join("\n\n")
+    );
+  };
 
   const toggleTts = () => {
     _ttsEnabled = !_ttsEnabled;
@@ -806,7 +808,27 @@ export default function ExercisesGame() {
         >
           {ttsOn ? <Volume2 className="w-7 h-7" /> : <VolumeX className="w-7 h-7" />}
         </button>
+        <button
+          onClick={showVoiceDebug}
+          className="p-2 rounded-xl bg-muted text-muted-foreground hover:bg-muted/70 transition-colors text-xs font-bold"
+          aria-label="Show TTS voice list"
+          title="Debug: show available TTS voices"
+        >
+          🎤
+        </button>
       </div>
+
+      {/* TTS voice debug panel — temporary */}
+      {voiceDebug && (
+        <div className="mb-3 p-3 rounded-xl bg-black text-green-400 text-[11px] font-mono leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap shrink-0">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-yellow-300 font-bold">TTS Voices on this device</span>
+            <button onClick={() => setVoiceDebug(null)} className="text-white text-xs underline">close</button>
+          </div>
+          {voiceDebug}
+        </div>
+      )}
+
       <p className="text-sm text-muted-foreground mt-2 mb-3 shrink-0">
         <span className="font-semibold text-foreground">{lessonLabel}</span>
         {" — "}

@@ -33,3 +33,13 @@ and `artifacts/wblackjack/src/pages/flashcards-game.tsx`.
 A temporary `[TTS] ...` console diagnostic (one-time voice dump + per-call match log)
 was added to both files to read the device's real voice list via browser console.
 Remove it once the language-specific issue is confirmed resolved on the user's device.
+
+## Trailing spaces in DB language names
+
+`songs.language` and `word_pool.language` had trailing spaces for some languages
+(e.g. "Mandarin " not "Mandarin"). The TTS `speak()` function must call
+`.toLowerCase().trim()` on the langName before the LANG_MAP lookup, or
+the lookup returns `undefined` → no voice assigned → engine plays default voice.
+
+**Also fix the data:** run `UPDATE songs SET language = trim(language) WHERE language != trim(language)`
+and the same for `word_pool`. This happened for "Polish " and "Mandarin " (203 word_pool rows).
