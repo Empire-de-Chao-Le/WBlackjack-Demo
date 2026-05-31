@@ -176,9 +176,9 @@ export function LanguagesTab() {
           className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card hover:bg-muted/60 hover:border-primary/40 transition-all p-6 aspect-square shadow-sm active:scale-95"
         >
           <span className="text-6xl leading-none">🌍</span>
-          <span className="text-base font-semibold capitalize text-foreground">The World</span>
+          <span className="font-semibold capitalize text-foreground text-[20px]">The World</span>
           {worldCount !== undefined && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-[14px]">
               {worldCount} words of Babylonian Chaos!
             </span>
           )}
@@ -198,10 +198,10 @@ export function LanguagesTab() {
                   onClick={() => setLocation(`/flashcards/${encodeURIComponent(lang)}`)}
                   className="flex-1 flex flex-col items-center justify-center gap-1 px-3 hover:bg-primary/5 active:bg-primary/10 transition-colors"
                 >
-                  <span className="text-5xl leading-none">{getLanguageFlag(lang)}</span>
-                  <span className="text-sm font-semibold capitalize text-foreground">{lang}</span>
+                  <span className="text-[60px]">{getLanguageFlag(lang)}</span>
+                  <span className="font-semibold capitalize text-foreground text-[20px]">{lang}</span>
                   {count !== undefined && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-[14px]">
                       {count} {count === 1 ? "word" : "words"}
                     </span>
                   )}
@@ -210,7 +210,7 @@ export function LanguagesTab() {
                 {/* Bottom: "Take a look" stretched across the full width */}
                 <button
                   onClick={() => setPoolLang(lang)}
-                  className="shrink-0 w-full py-3 text-sm font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border"
+                  className="shrink-0 w-full py-3 font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border text-[16px] pt-[4px] pb-[4px]"
                 >
                   Take a look
                 </button>
@@ -219,7 +219,6 @@ export function LanguagesTab() {
           );
         })}
       </div>
-
       <WordPoolModal language={poolLang} onClose={() => setPoolLang(null)} />
     </>
   );
