@@ -38,6 +38,8 @@ const SPECIAL_FLAGS: Record<string, string> = {
   burmese: '🇲🇲',
   sinhalese: '🇱🇰',
   kurdish: '🇮🇶',
+  montenegrin: '🇲🇪',
+  minnan: '🇹🇼',
 };
 
 // Lazily built: English display name (lowercase) → ISO code
