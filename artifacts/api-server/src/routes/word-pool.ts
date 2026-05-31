@@ -85,6 +85,41 @@ router.get("/word-pool/world", async (_req, res): Promise<void> => {
 });
 
 /**
+ * DELETE /word-pool/:language
+ * Wipes every trace of a language from the word pool:
+ *   1. Deletes all flashcard_progress rows tied to word_pool entries of this language.
+ *   2. Deletes all word_pool entries for this language.
+ * Used when deleting the last song in a language and the user confirms "Clear Language".
+ */
+router.delete("/word-pool/:language", async (req, res): Promise<void> => {
+  const { language } = req.params;
+  if (!language?.trim()) {
+    res.status(400).json({ error: "Language is required" });
+    return;
+  }
+
+  const entries = await db
+    .select({ id: wordPoolTable.id })
+    .from(wordPoolTable)
+    .where(eq(wordPoolTable.language, language));
+
+  const ids = entries.map((e) => e.id);
+
+  if (ids.length > 0) {
+    await db
+      .delete(flashcardProgressTable)
+      .where(inArray(flashcardProgressTable.wordPoolId, ids));
+  }
+
+  const deleted = await db
+    .delete(wordPoolTable)
+    .where(eq(wordPoolTable.language, language))
+    .returning({ id: wordPoolTable.id });
+
+  res.json({ language, deletedEntries: deleted.length });
+});
+
+/**
  * GET /word-pool/:language
  * Returns all word pool entries for the given language.
  */

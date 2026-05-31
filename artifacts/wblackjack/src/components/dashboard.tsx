@@ -6,6 +6,7 @@ import {
   useUpdateSong,
   useDeleteSong,
   getListSongsQueryKey,
+  getListLanguagesQueryKey,
 } from "@workspace/api-client-react";
 import { getLanguageFlag, normalizeString } from "@/lib/helpers";
 import { Link } from "wouter";
@@ -97,6 +98,57 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
 
   const updateSong = useUpdateSong();
   const deleteSong = useDeleteSong();
+
+  type PendingDelete = { id: number; title: string; language: string };
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [deleteStep, setDeleteStep] = useState<"confirm" | "last-song">("confirm");
+  const [deleteChecking, setDeleteChecking] = useState(false);
+  const [deleteWorking, setDeleteWorking] = useState(false);
+
+  const openDeleteDialog = (song: PendingDelete) => {
+    setPendingDelete(song);
+    setDeleteStep("confirm");
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleteWorking) return;
+    setPendingDelete(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!pendingDelete) return;
+    setDeleteChecking(true);
+    try {
+      const res = await fetch(`/api/songs?language=${encodeURIComponent(pendingDelete.language)}`);
+      const songsInLanguage: unknown[] = await res.json();
+      if (songsInLanguage.length > 1) {
+        await fetch(`/api/songs/${pendingDelete.id}`, { method: "DELETE" });
+        queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListLanguagesQueryKey() });
+        setPendingDelete(null);
+      } else {
+        setDeleteStep("last-song");
+      }
+    } finally {
+      setDeleteChecking(false);
+    }
+  };
+
+  const handleClearLanguage = async () => {
+    if (!pendingDelete) return;
+    setDeleteWorking(true);
+    try {
+      await fetch(`/api/songs/${pendingDelete.id}`, { method: "DELETE" });
+      await fetch(`/api/word-pool/${encodeURIComponent(pendingDelete.language)}`, { method: "DELETE" });
+      queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getListLanguagesQueryKey() });
+      queryClient.invalidateQueries({ queryKey: ["word-pool-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["word-pool-world"] });
+      setPendingDelete(null);
+    } finally {
+      setDeleteWorking(false);
+    }
+  };
 
   const filteredSongs = useMemo(() => {
     let result = search.trim()
@@ -353,56 +405,79 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                 )}
 
                 {/* Delete */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <button
-                      className="w-5 h-5 flex items-center justify-center text-muted-foreground/40 hover:text-red-600 transition-colors"
-                      data-testid={`btn-delete-${song.id}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
-                        <AlertTriangle className="h-8 w-8 text-red-600" strokeWidth={2.5} />
-                      </div>
-                      <AlertDialogTitle className="text-center">
-                        Delete "{song.title}"?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription className="text-center">
-                        This permanently removes the song, its lyrics, and timestamps
-                        from your library. This cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => {
-                          deleteSong.mutate(
-                            { id: song.id },
-                            {
-                              onSuccess: () => {
-                                queryClient.invalidateQueries({
-                                  queryKey: getListSongsQueryKey(),
-                                });
-                              },
-                            }
-                          );
-                        }}
-                        data-testid={`btn-delete-confirm-${song.id}`}
-                      >
-                        Delete song
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <button
+                  className="w-5 h-5 flex items-center justify-center text-muted-foreground/40 hover:text-red-600 transition-colors"
+                  data-testid={`btn-delete-${song.id}`}
+                  onClick={() => openDeleteDialog({ id: song.id, title: song.title, language: song.language })}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* ── Delete dialog (controlled, two-step) ──────────────────────────── */}
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open) closeDeleteDialog(); }}>
+        <AlertDialogContent>
+          {deleteStep === "confirm" ? (
+            <>
+              <AlertDialogHeader>
+                <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
+                  <AlertTriangle className="h-8 w-8 text-red-600" strokeWidth={2.5} />
+                </div>
+                <AlertDialogTitle className="text-center">
+                  Delete "{pendingDelete?.title}"?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-center">
+                  This permanently removes the song, its lyrics, and timestamps
+                  from your library. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteChecking}>Cancel</AlertDialogCancel>
+                <button
+                  disabled={deleteChecking}
+                  onClick={handleDeleteConfirm}
+                  data-testid={`btn-delete-confirm-${pendingDelete?.id}`}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors"
+                >
+                  {deleteChecking ? "Checking…" : "Delete song"}
+                </button>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950">
+                  <AlertTriangle className="h-8 w-8 text-orange-500" strokeWidth={2.5} />
+                </div>
+                <AlertDialogTitle className="text-center">
+                  Last song in {pendingDelete?.language}
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-center">
+                  This is the only {pendingDelete?.language} song in your library.
+                  You can cancel, or <strong>Clear Language</strong> — which deletes the song
+                  and permanently erases the {pendingDelete?.language} Word Pool and all
+                  flashcard progress, as if this language was never added.
+                  It can be added fresh later with a new song.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteWorking}>Cancel</AlertDialogCancel>
+                <button
+                  disabled={deleteWorking}
+                  onClick={handleClearLanguage}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 transition-colors"
+                >
+                  {deleteWorking ? "Clearing…" : `Clear ${pendingDelete?.language}`}
+                </button>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
