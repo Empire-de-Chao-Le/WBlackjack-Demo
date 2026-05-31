@@ -210,7 +210,7 @@ export function LanguagesTab() {
                 {/* Bottom: "Take a look" stretched across the full width */}
                 <button
                   onClick={() => setPoolLang(lang)}
-                  className="shrink-0 w-full py-3 font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border text-[16px] pt-[4px] pb-[4px]"
+                  className="shrink-0 w-full py-3 font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border text-[16px] pt-[6px] pb-[6px]"
                 >
                   Take a look
                 </button>
