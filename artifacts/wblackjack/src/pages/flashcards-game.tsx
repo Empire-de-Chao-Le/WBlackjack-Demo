@@ -238,6 +238,18 @@ export default function FlashcardsGame() {
   const [sessionDone, setSessionDone] = useState(false);
   const [confirmingIgnore, setConfirmingIgnore] = useState(false);
   const [ttsOn, setTtsOn] = useState(_ttsEnabled);
+  const [voiceDebug, setVoiceDebug] = useState<string | null>(null);
+
+  const showVoiceDebug = () => {
+    const voices = window.speechSynthesis?.getVoices() ?? [];
+    if (voices.length === 0) {
+      setVoiceDebug("No voices loaded yet — try again after pressing a card.");
+      return;
+    }
+    setVoiceDebug(
+      voices.map((v) => `${v.name}\n  lang=${v.lang} local=${v.localService} default=${v.default}`).join("\n\n")
+    );
+  };
 
   const toggleTts = () => {
     _ttsEnabled = !_ttsEnabled;
@@ -509,7 +521,26 @@ export default function FlashcardsGame() {
         >
           {ttsOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
         </button>
+        <button
+          onClick={showVoiceDebug}
+          className="shrink-0 p-2 rounded-xl bg-muted text-muted-foreground hover:bg-muted/70 transition-colors text-xs font-bold"
+          aria-label="Show TTS voice list"
+          title="Debug: show available TTS voices"
+        >
+          🎤
+        </button>
       </div>
+
+      {/* TTS voice debug panel — temporary, remove once voice issue is diagnosed */}
+      {voiceDebug && (
+        <div className="mb-4 p-3 rounded-xl bg-black text-green-400 text-[11px] font-mono leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-yellow-300 font-bold">TTS Voices on this device</span>
+            <button onClick={() => setVoiceDebug(null)} className="text-white text-xs underline">close</button>
+          </div>
+          {voiceDebug}
+        </div>
+      )}
 
       {/* Question card */}
       <button
