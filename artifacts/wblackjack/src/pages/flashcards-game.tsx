@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Ban } from "lucide-react";
+import { ArrowLeft, Ban, Volume2, VolumeX } from "lucide-react";
 
 // ── TTS (self-contained copy so this page is independent) ─────────────────────
 let _ttsEnabled: boolean = (() => {
@@ -182,6 +182,13 @@ export default function FlashcardsGame() {
   const [score, setScore] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
   const [confirmingIgnore, setConfirmingIgnore] = useState(false);
+  const [ttsOn, setTtsOn] = useState(_ttsEnabled);
+
+  const toggleTts = () => {
+    _ttsEnabled = !_ttsEnabled;
+    try { localStorage.setItem("tts_enabled", String(_ttsEnabled)); } catch {}
+    setTtsOn(_ttsEnabled);
+  };
 
   // Ref kept in sync every render so click handlers never close over stale length
   const questionsRef = useRef<Question[]>([]);
@@ -400,7 +407,7 @@ export default function FlashcardsGame() {
       tabIndex={-1}
       className="min-h-[100dvh] bg-background text-foreground flex flex-col p-4 max-w-lg mx-auto w-full outline-none"
     >
-      {/* Top row: back + progress bar + ignore */}
+      {/* Top row: back · ignore · progress bar · mute */}
       <div className="flex items-center gap-3 mb-5 mt-1">
         <button
           onClick={goBack}
@@ -409,12 +416,6 @@ export default function FlashcardsGame() {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-          <div
-            className="h-full rounded-full bg-[#8c3cdd] transition-all duration-400"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
         {confirmingIgnore ? (
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -440,6 +441,19 @@ export default function FlashcardsGame() {
             <Ban className="w-5 h-5" />
           </button>
         )}
+        <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[#8c3cdd] transition-all duration-400"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        <button
+          onClick={toggleTts}
+          className="shrink-0 p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors"
+          aria-label={ttsOn ? "Mute sound" : "Unmute sound"}
+        >
+          {ttsOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </button>
       </div>
 
       {/* Question card */}
