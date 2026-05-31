@@ -121,7 +121,9 @@ router.delete("/word-pool/:language", async (req, res): Promise<void> => {
 
 /**
  * GET /word-pool/:language
- * Returns all word pool entries for the given language.
+ * Returns all word pool entries for the given language, including whether
+ * each entry has been individually ignored (from flashcard_progress).
+ * Sorted alphabetically by phrase.
  */
 router.get("/word-pool/:language", async (req, res): Promise<void> => {
   const { language } = req.params;
@@ -131,9 +133,20 @@ router.get("/word-pool/:language", async (req, res): Promise<void> => {
   }
 
   const entries = await db
-    .select()
+    .select({
+      id: wordPoolTable.id,
+      language: wordPoolTable.language,
+      phrase: wordPoolTable.phrase,
+      translation: wordPoolTable.translation,
+      ignored: flashcardProgressTable.ignored,
+    })
     .from(wordPoolTable)
-    .where(eq(wordPoolTable.language, language));
+    .leftJoin(
+      flashcardProgressTable,
+      eq(wordPoolTable.id, flashcardProgressTable.wordPoolId)
+    )
+    .where(eq(wordPoolTable.language, language))
+    .orderBy(wordPoolTable.phrase);
 
   res.json(
     entries.map((e) => ({
@@ -141,7 +154,7 @@ router.get("/word-pool/:language", async (req, res): Promise<void> => {
       language: e.language,
       phrase: e.phrase,
       translation: e.translation,
-      createdAt: e.createdAt.toISOString(),
+      ignored: e.ignored ?? false,
     }))
   );
 });
