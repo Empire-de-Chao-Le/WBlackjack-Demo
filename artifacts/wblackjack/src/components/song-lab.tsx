@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Papa from "papaparse";
 import { SyncTool } from "./sync-tool";
+import { getLanguageFlag } from "@/lib/helpers";
 import {
   useListArtists,
   useListLanguages,
@@ -261,13 +262,20 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
         </div>
         <div className="space-y-2">
           <Label>Language</Label>
-          <AutocompleteInput
-            value={language}
-            onChange={setLanguage}
-            suggestions={languageSuggestions}
-            placeholder="e.g. French"
-            testId="input-language"
-          />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <AutocompleteInput
+                value={language}
+                onChange={setLanguage}
+                suggestions={languageSuggestions}
+                placeholder="e.g. French"
+                testId="input-language"
+              />
+            </div>
+            <div className="shrink-0 w-10 h-10 rounded-lg border border-border bg-muted flex items-center justify-center text-2xl leading-none select-none">
+              {language.trim() ? getLanguageFlag(language.trim()) : ""}
+            </div>
+          </div>
         </div>
         <div className="space-y-2">
           <Label>Lyrics CSV (6 cols: orig, trans, d1, d2, d3, d4)</Label>
