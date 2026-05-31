@@ -500,7 +500,7 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
             const isSelected = selectedLeftPos === pos;
             const isWrong = isSelected && wrongFlash;
             return (
-              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className="flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer pt-[4px] pb-[4px] pl-[10px] pr-[10px]" data-testid={`left-${pos}`}>
+              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-1.5 rounded-full border-2 text-base font-medium transition-all pl-[10px] pr-[10px] pt-[4px] pb-[4px] ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95" : isSelected ? "border-primary bg-primary/20 text-primary cursor-pointer" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
                 <span className="text-xs text-muted-foreground shrink-0">{pos + 1}</span>
                 <span className="text-[20px]">{item.phrase}</span>
               </button>
