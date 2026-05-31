@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Ban, Volume2, VolumeX } from "lucide-react";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 // ── TTS (self-contained copy so this page is independent) ─────────────────────
 let _ttsEnabled: boolean = (() => {
@@ -297,6 +298,7 @@ export default function FlashcardsGame() {
     try { sessionStorage.setItem("home_return_tab", "languages"); } catch {}
     setLocation("/");
   };
+  useAndroidBack(goBack);
 
   // Focus the container element on mount — focusing a real DOM node gives the
   // iframe window keyboard focus immediately, without needing a mouse click.

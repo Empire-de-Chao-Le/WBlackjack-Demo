@@ -1,11 +1,13 @@
 import { useRoute, useLocation } from "wouter";
 import { useGetSong, useGetSongLyrics, getGetSongQueryKey } from "@workspace/api-client-react";
 import { ArrowLeft } from "lucide-react";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 export default function SongTranslation() {
   const [, params] = useRoute("/song/:id/translation");
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0", 10);
+  useAndroidBack(() => setLocation(`/song/${id}`));
 
   const { data: song } = useGetSong(id, {
     query: { enabled: !!id, queryKey: getGetSongQueryKey(id) },

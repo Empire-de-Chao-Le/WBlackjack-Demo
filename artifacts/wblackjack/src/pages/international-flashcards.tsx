@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 
@@ -60,6 +61,7 @@ function buildSession(pool: PoolEntry[]): Question[] {
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function InternationalFlashcards() {
   const [, setLocation] = useLocation();
+  useAndroidBack(() => setLocation("/"));
 
   const { data: pool, isLoading } = useQuery({
     queryKey: ["word-pool-world"],

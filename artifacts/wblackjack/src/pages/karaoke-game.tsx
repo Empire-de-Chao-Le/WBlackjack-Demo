@@ -6,6 +6,7 @@ import {
   useMemo,
 } from "react";
 import { Link, useRoute, useLocation } from "wouter";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 import {
   useGetSong,
   useGetSongLyrics,
@@ -144,6 +145,7 @@ export default function KaraokeGame() {
   const id = parseInt(params?.id || "0", 10);
   const difficulty = parseInt(params?.difficulty || "10", 10);
   const [, setLocation] = useLocation();
+  useAndroidBack(() => setLocation(`/song/${id}/karaoke`));
   const queryClient = useQueryClient();
 
   const { data: song, isLoading: songLoading } = useGetSong(id, {

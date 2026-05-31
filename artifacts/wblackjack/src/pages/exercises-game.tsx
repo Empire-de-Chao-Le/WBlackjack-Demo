@@ -12,6 +12,7 @@ import { ArrowLeft, Loader2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { tokenize } from "@/lib/helpers";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 type LyricLine = {
   lineIndex: number;
@@ -661,6 +662,7 @@ export default function ExercisesGame() {
   const [, params] = useRoute("/song/:id/exercises");
   const id = parseInt(params?.id || "0", 10);
   const [, setLocation] = useLocation();
+  useAndroidBack(() => setLocation(`/song/${id}`));
   const queryClient = useQueryClient();
 
   const { data: song, isLoading: songLoading } = useGetSong(id, {

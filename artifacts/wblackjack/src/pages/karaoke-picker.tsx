@@ -1,4 +1,5 @@
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useGetSongLyrics } from "@workspace/api-client-react";
@@ -6,8 +7,10 @@ import { tokenize } from "@/lib/helpers";
 
 export default function KaraokePicker() {
   const [, params] = useRoute("/song/:id/karaoke");
+  const [, setLocation] = useLocation();
   const id = params?.id;
   const numericId = parseInt(id || "0", 10);
+  useAndroidBack(() => setLocation(`/song/${id}`));
 
   const { data: lyrics } = useGetSongLyrics(numericId, {
     query: { enabled: !!numericId },

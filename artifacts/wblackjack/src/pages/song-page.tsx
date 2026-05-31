@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useRoute, useLocation } from "wouter";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 import { useGetSong, useGetSongLyrics, getGetSongQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mic, Brain, Pencil, BookOpen, Languages, ScrollText } from "lucide-react";
@@ -10,6 +11,7 @@ export default function SongPage() {
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0", 10);
   const { data: song, isLoading } = useGetSong(id, { query: { enabled: !!id, queryKey: getGetSongQueryKey(id) } });
+  useAndroidBack(() => setLocation("/"));
 
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
   if (!song) return <div className="p-8 text-center text-destructive">Song not found.</div>;

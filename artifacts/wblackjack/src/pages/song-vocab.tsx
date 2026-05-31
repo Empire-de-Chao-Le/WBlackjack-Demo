@@ -2,6 +2,7 @@ import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useGetSong, getGetSongQueryKey } from "@workspace/api-client-react";
 import { ArrowLeft } from "lucide-react";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 type VocabEntry = { id: number; songId: number; phrase: string; translation: string };
 
@@ -9,6 +10,7 @@ export default function SongVocab() {
   const [, params] = useRoute("/song/:id/vocab");
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0", 10);
+  useAndroidBack(() => setLocation(`/song/${id}`));
 
   const { data: song } = useGetSong(id, {
     query: { enabled: !!id, queryKey: getGetSongQueryKey(id) },

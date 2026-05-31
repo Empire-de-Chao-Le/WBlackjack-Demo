@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 import {
   useGetSong,
   useGetSongLyrics,
@@ -39,6 +40,7 @@ export default function SongEdit() {
   const [, params] = useRoute("/song/:id/edit");
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0", 10);
+  useAndroidBack(() => setLocation(`/song/${id}`));
   const queryClient = useQueryClient();
 
   const { data: song, isLoading: songLoading } = useGetSong(id, {
