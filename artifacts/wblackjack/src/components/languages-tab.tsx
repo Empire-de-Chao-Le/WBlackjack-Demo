@@ -190,29 +190,31 @@ export function LanguagesTab() {
           return (
             <div
               key={lang}
-              className="flex flex-col rounded-2xl border border-border shadow-sm overflow-hidden aspect-square bg-[#faf7ff] dark:bg-[#181322] hover:border-primary/30 hover:shadow-md transition-all"
+              className="relative aspect-square rounded-2xl border border-border shadow-sm overflow-hidden bg-[#faf7ff] dark:bg-[#181322] hover:border-primary/30 hover:shadow-md transition-all"
             >
-              {/* Clickable top: flag + name + count starts flashcards */}
-              <button
-                onClick={() => setLocation(`/flashcards/${encodeURIComponent(lang)}`)}
-                className="flex-1 flex flex-col items-center justify-center gap-1 px-3 pt-4 pb-2 hover:bg-primary/5 active:bg-primary/10 transition-colors"
-              >
-                <span className="text-5xl leading-none">{getLanguageFlag(lang)}</span>
-                <span className="text-sm font-semibold capitalize text-foreground">{lang}</span>
-                {count !== undefined && (
-                  <span className="text-xs text-muted-foreground">
-                    {count} {count === 1 ? "word" : "words"}
-                  </span>
-                )}
-              </button>
+              <div className="absolute inset-0 flex flex-col">
+                {/* Clickable top: flag + name + count starts flashcards */}
+                <button
+                  onClick={() => setLocation(`/flashcards/${encodeURIComponent(lang)}`)}
+                  className="flex-1 flex flex-col items-center justify-center gap-1 px-3 hover:bg-primary/5 active:bg-primary/10 transition-colors"
+                >
+                  <span className="text-5xl leading-none">{getLanguageFlag(lang)}</span>
+                  <span className="text-sm font-semibold capitalize text-foreground">{lang}</span>
+                  {count !== undefined && (
+                    <span className="text-xs text-muted-foreground">
+                      {count} {count === 1 ? "word" : "words"}
+                    </span>
+                  )}
+                </button>
 
-              {/* Bottom: "Take a look" stretched across the full width */}
-              <button
-                onClick={() => setPoolLang(lang)}
-                className="w-full py-3 text-sm font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border"
-              >
-                Take a look
-              </button>
+                {/* Bottom: "Take a look" stretched across the full width */}
+                <button
+                  onClick={() => setPoolLang(lang)}
+                  className="shrink-0 w-full py-3 text-sm font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border"
+                >
+                  Take a look
+                </button>
+              </div>
             </div>
           );
         })}
