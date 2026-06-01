@@ -6,6 +6,7 @@ import { LanguagesTab } from "@/components/languages-tab";
 import { useLocation } from "wouter";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react";
 import { useListLanguages } from "@workspace/api-client-react";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 const DICE_FACES = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -31,6 +32,7 @@ function GradientDice6({ size = 28 }: { size?: number }) {
 }
 
 export default function Home() {
+  useAndroidBack(() => {}); // Intercept Android back on the root screen — stay put
   const [tab, setTab] = useState(() => {
     try {
       const t = sessionStorage.getItem("home_return_tab");

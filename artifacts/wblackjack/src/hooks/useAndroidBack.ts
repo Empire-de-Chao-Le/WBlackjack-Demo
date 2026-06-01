@@ -18,6 +18,11 @@ export function useAndroidBack(onBack: () => void): void {
     window.history.pushState({ __androidBack: true }, "");
 
     function handler() {
+      // Re-arm the sentinel immediately, before any navigation.
+      // This ensures the interceptor is always in place even if the
+      // incoming page hasn't mounted its own sentinel yet, and it also
+      // keeps the home screen protected when onBack does nothing.
+      window.history.pushState({ __androidBack: true }, "");
       onBackRef.current();
     }
 
