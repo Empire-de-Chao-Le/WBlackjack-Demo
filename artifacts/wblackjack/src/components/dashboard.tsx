@@ -368,8 +368,12 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <button
-                        className="w-5 h-5 rounded-md border-2 border-border transition-transform hover:scale-110 relative"
-                        style={{ backgroundColor: progressColor(song.timesPlayed, song.status) }}
+                        className="w-5 h-5 rounded-md border-2 transition-transform hover:scale-110 relative"
+                        style={
+                          song.status === "new"
+                            ? { backgroundColor: "transparent", borderColor: progressColor(song.timesPlayed, song.status) }
+                            : { backgroundColor: progressColor(song.timesPlayed, song.status), borderColor: progressColor(song.timesPlayed, song.status) }
+                        }
                         title="Mark as Done"
                         data-testid={`btn-mark-done-${song.id}`}
                       />
