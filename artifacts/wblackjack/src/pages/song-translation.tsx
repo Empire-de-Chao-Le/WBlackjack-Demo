@@ -30,9 +30,16 @@ export default function SongTranslation() {
         <div>
           <h1 className="text-xl font-bold">Translation</h1>
           {song && (
-            <p className="text-sm text-muted-foreground">
-              {song.artist} — {song.title}
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground">
+                {song.artist} — {song.title}
+              </p>
+              {song.csvFilename && (
+                <p className="text-xs text-muted-foreground/60 mt-0.5">
+                  Source: {song.csvFilename}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

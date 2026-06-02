@@ -30,9 +30,16 @@ export default function SongLyrics() {
         <div>
           <h1 className="font-bold text-[19px]">Lyrics</h1>
           {song && (
-            <p className="text-muted-foreground text-[16px]">
-              {song.artist} — {song.title}
-            </p>
+            <>
+              <p className="text-muted-foreground text-[16px]">
+                {song.artist} — {song.title}
+              </p>
+              {song.csvFilename && (
+                <p className="text-xs text-muted-foreground/60 mt-0.5">
+                  Source: {song.csvFilename}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

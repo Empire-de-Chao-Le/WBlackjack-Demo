@@ -102,6 +102,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [language, setLanguage] = useState("");
   const [csvData, setCsvData] = useState<string[][]>([]);
+  const [csvFilename, setCsvFilename] = useState<string | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [vocabCsvText, setVocabCsvText] = useState<string | null>(null);
   const [vocabCsvError, setVocabCsvError] = useState<string | null>(null);
@@ -119,6 +120,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
     const file = e.target.files?.[0];
     if (!file) return;
     setCsvError(null);
+    setCsvFilename(file.name);
     Papa.parse<string[]>(file, {
       header: false,
       skipEmptyLines: true,
@@ -133,6 +135,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
             `each row must have exactly 6 columns: original, translation, d1, d2, d3, d4.`
           );
           setCsvData([]);
+          setCsvFilename(null);
           return;
         }
         setCsvData(rows);
@@ -210,6 +213,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
         title={title}
         youtubeUrl={youtubeUrl}
         language={language}
+        csvFilename={csvFilename ?? undefined}
         onExit={() => setIsSyncing(false)}
         onSaved={() => {
           setIsSyncing(false);

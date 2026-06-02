@@ -56,6 +56,7 @@ interface Props {
   onSaved: () => void;
   vocabCsv?: string;
   existingSongId?: number;
+  csvFilename?: string;
 }
 
 function extractVideoId(url: string): string {
@@ -63,7 +64,7 @@ function extractVideoId(url: string): string {
   return match ? match[1] : url;
 }
 
-export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved, vocabCsv, existingSongId }: Props) {
+export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved, vocabCsv, existingSongId, csvFilename }: Props) {
   const queryClient = useQueryClient();
   const playerRef = useRef<YTPlayer | null>(null);
   const initRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,9 +125,16 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
       let songId: number;
       if (existingSongId) {
         songId = existingSongId;
+        if (csvFilename) {
+          await fetch(`/api/songs/${songId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ csvFilename }),
+            headers: { "Content-Type": "application/json" },
+          });
+        }
       } else {
         const song = await createSong.mutateAsync({
-          data: { artist, title, youtubeUrl, language },
+          data: { artist, title, youtubeUrl, language, csvFilename },
         });
         songId = song.id;
       }

@@ -54,6 +54,7 @@ function buildSongResponse(
     lastPlayed: song.lastPlayed ? song.lastPlayed.toISOString() : null,
     hasLyrics,
     hasTimestamps,
+    csvFilename: song.csvFilename ?? null,
   };
 }
 
@@ -164,6 +165,7 @@ router.post("/songs", async (req, res): Promise<void> => {
       language: parsed.data.language,
       status: "new",
       timesPlayed: 0,
+      csvFilename: parsed.data.csvFilename ?? null,
     })
     .returning();
   res.status(201).json(buildSongResponse(song, false, false));
@@ -222,6 +224,7 @@ router.patch("/songs/:id", async (req, res): Promise<void> => {
   if (body.data.timesPlayed !== undefined) updates.timesPlayed = body.data.timesPlayed;
   if (body.data.lastPlayed !== undefined)
     updates.lastPlayed = body.data.lastPlayed ? new Date(body.data.lastPlayed) : null;
+  if (body.data.csvFilename !== undefined) updates.csvFilename = body.data.csvFilename;
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "No updatable fields provided." });
@@ -276,6 +279,7 @@ router.put("/songs/:id", async (req, res): Promise<void> => {
   if (body.data.timesPlayed !== undefined) updates.timesPlayed = body.data.timesPlayed;
   if (body.data.lastPlayed !== undefined)
     updates.lastPlayed = body.data.lastPlayed ? new Date(body.data.lastPlayed) : null;
+  if (body.data.csvFilename !== undefined) updates.csvFilename = body.data.csvFilename;
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "No updatable fields provided." });

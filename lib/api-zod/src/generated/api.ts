@@ -58,7 +58,8 @@ export const CreateSongBody = zod.object({
   "artist": zod.string().min(1),
   "title": zod.string().min(1),
   "youtubeUrl": zod.string().min(1),
-  "language": zod.string().min(1)
+  "language": zod.string().min(1),
+  "csvFilename": zod.string().optional()
 })
 
 

@@ -8,4 +8,5 @@ export const EditSongBody = z.object({
   status: z.enum(["new", "active", "done"]).optional(),
   timesPlayed: z.number().int().optional(),
   lastPlayed: z.string().nullable().optional(),
+  csvFilename: z.string().optional(),
 });

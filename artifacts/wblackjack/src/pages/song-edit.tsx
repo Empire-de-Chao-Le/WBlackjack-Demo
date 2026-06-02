@@ -67,6 +67,7 @@ export default function SongEdit() {
 
   // Re-sync with new CSV lines (overrides existing syncLines)
   const [resyncLines, setResyncLines] = useState<LyricLineInput[] | null>(null);
+  const [resyncFilename, setResyncFilename] = useState<string | null>(null);
 
   const [newVocabCsvText, setNewVocabCsvText] = useState<string | null>(null);
   const [newVocabFileName, setNewVocabFileName] = useState<string | null>(null);
@@ -112,6 +113,7 @@ export default function SongEdit() {
         // Line count mismatch — show warning dialog
         setPendingNewRows(parsed.data);
         setPendingNewCount(newCount);
+        setResyncFilename(file.name);
         setShowMismatchDialog(true);
         // Don't accept the file yet
         setNewLyricsCsvText(null);
@@ -127,6 +129,7 @@ export default function SongEdit() {
 
   const handleMismatchGoBack = () => {
     setPendingNewRows(null);
+    setResyncFilename(null);
     setShowMismatchDialog(false);
     setLyricsInputKey((k) => k + 1); // Reset file input
   };
@@ -180,6 +183,7 @@ export default function SongEdit() {
       if (artist.trim() && artist !== song.artist) patchData.artist = artist.trim();
       if (title.trim() && title !== song.title) patchData.title = title.trim();
       if (language.trim() && language !== song.language) patchData.language = language.trim();
+      if (newLyricsFileName) patchData.csvFilename = newLyricsFileName;
 
       if (Object.keys(patchData).length > 0) {
         const res = await fetch(`/api/songs/${id}`, {
@@ -233,9 +237,10 @@ export default function SongEdit() {
         youtubeUrl={song.youtubeUrl}
         language={song.language}
         existingSongId={song.id}
+        csvFilename={resyncFilename ?? undefined}
         lines={effectiveSyncLines}
-        onExit={() => { setIsSyncing(false); setResyncLines(null); }}
-        onSaved={() => { setIsSyncing(false); setResyncLines(null); setLocation(`/song/${id}`); }}
+        onExit={() => { setIsSyncing(false); setResyncLines(null); setResyncFilename(null); }}
+        onSaved={() => { setIsSyncing(false); setResyncLines(null); setResyncFilename(null); setLocation(`/song/${id}`); }}
       />
     );
   }
