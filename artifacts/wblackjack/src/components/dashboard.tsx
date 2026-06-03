@@ -308,12 +308,17 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
               {/* Title + artist */}
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <Link href={`/song/${song.id}`} className="block min-w-0">
-                  <h3
-                    className="font-bold truncate group-hover:text-primary transition-colors text-[20px]"
-                    data-testid={`text-song-title-${song.id}`}
-                  >
-                    {song.title}
-                  </h3>
+                  <div className="flex items-center gap-1 min-w-0">
+                    <h3
+                      className="font-bold truncate group-hover:text-primary transition-colors text-[20px] min-w-0"
+                      data-testid={`text-song-title-${song.id}`}
+                    >
+                      {song.title}
+                    </h3>
+                    {song.hasTimestamps === false && (
+                      <span className="text-red-500 text-[20px] font-black shrink-0 leading-none" title="Not synced">!</span>
+                    )}
+                  </div>
                   <p className="truncate mt-0.5 text-[#a39daf] text-[16px] flex items-center gap-1">
                     <span className="text-sm leading-none">{getLanguageFlag(song.language)}</span>
                     {song.artist}

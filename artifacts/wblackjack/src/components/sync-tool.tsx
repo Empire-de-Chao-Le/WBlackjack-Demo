@@ -132,14 +132,14 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
             headers: { "Content-Type": "application/json" },
           });
         }
+        // Lyrics are already stored — skip upsert to preserve the saved distractors/translations
       } else {
         const song = await createSong.mutateAsync({
           data: { artist, title, youtubeUrl, language, csvFilename },
         });
         songId = song.id;
+        await upsertLyrics.mutateAsync({ id: songId, data: { lines } });
       }
-
-      await upsertLyrics.mutateAsync({ id: songId, data: { lines } });
 
       await saveTimestamps.mutateAsync({
         id: songId,

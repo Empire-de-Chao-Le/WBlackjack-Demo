@@ -9,7 +9,11 @@ import {
   useListArtists,
   useListLanguages,
   useListSongs,
+  useCreateSong,
+  useUpsertLyrics,
+  getListSongsQueryKey,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -107,11 +111,16 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
   const [vocabCsvText, setVocabCsvText] = useState<string | null>(null);
   const [vocabCsvError, setVocabCsvError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSavingForLater, setIsSavingForLater] = useState(false);
   const [dupMessage, setDupMessage] = useState<string | null>(null);
+  const pendingActionRef = useRef<"sync" | "save">("sync");
 
   const { data: artists } = useListArtists();
   const { data: languages } = useListLanguages();
   const { data: songs, isLoading: songsLoading } = useListSongs({});
+  const createSong = useCreateSong();
+  const upsertLyrics = useUpsertLyrics();
+  const queryClient = useQueryClient();
 
   const artistSuggestions = (artists ?? []) as string[];
   const languageSuggestions = (languages ?? []) as string[];
@@ -173,7 +182,8 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
     !csvError &&
     !songsLoading;
 
-  const handleStartSync = () => {
+  const runWithDupCheck = (action: "sync" | "save") => {
+    pendingActionRef.current = action;
     const existing = (songs ?? []) as {
       artist: string;
       title: string;
@@ -188,22 +198,60 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
     const videoMatch = existing.find(
       (s) => extractVideoId(s.youtubeUrl) === newVideoId
     );
-
     if (songMatch || videoMatch) {
       const parts: string[] = [];
-      if (songMatch) {
-        parts.push(`the song "${artist.trim()} - ${title.trim()}"`);
-      }
-      if (videoMatch) {
-        parts.push(`the video ${youtubeUrl.trim()}`);
-      }
+      if (songMatch) parts.push(`the song "${artist.trim()} - ${title.trim()}"`);
+      if (videoMatch) parts.push(`the video ${youtubeUrl.trim()}`);
       setDupMessage(
         `${parts.join(" / ")} ${parts.length > 1 ? "are" : "is"} already in your library! Add another version?`
       );
       return;
     }
+    proceedWithAction(action);
+  };
 
-    setIsSyncing(true);
+  const proceedWithAction = (action: "sync" | "save") => {
+    if (action === "sync") {
+      setIsSyncing(true);
+    } else {
+      doSaveForLater();
+    }
+  };
+
+  const doSaveForLater = async () => {
+    setIsSavingForLater(true);
+    try {
+      const song = await createSong.mutateAsync({
+        data: { artist, title, youtubeUrl, language, csvFilename: csvFilename ?? undefined },
+      });
+      const songId = song.id;
+      await upsertLyrics.mutateAsync({
+        id: songId,
+        data: {
+          lines: csvData.map((row, idx) => ({
+            lineIndex: idx,
+            original: row[0] ?? "",
+            translation: row[1] ?? "",
+            distractor1: row[2] ?? "",
+            distractor2: row[3] ?? "",
+            distractor3: row[4] ?? "",
+            distractor4: row[5] ?? "",
+          })),
+        },
+      });
+      if (vocabCsvText) {
+        await fetch(`/api/songs/${songId}/vocab/csv`, {
+          method: "POST",
+          body: vocabCsvText,
+          headers: { "Content-Type": "text/csv" },
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
+      onSongAdded?.();
+    } catch (e) {
+      console.error(e);
+      setIsSavingForLater(false);
+    }
   };
 
   if (isSyncing) {
@@ -317,15 +365,27 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
         </div>
       </div>
 
-      <Button
-        onClick={handleStartSync}
-        disabled={!isValid}
-        size="lg"
-        className="w-full mt-4 font-bold"
-        data-testid="btn-start-sync"
-      >
-        Start Sync
-      </Button>
+      <div className="flex gap-3 mt-4">
+        <Button
+          onClick={() => runWithDupCheck("save")}
+          disabled={!isValid || isSavingForLater}
+          size="lg"
+          variant="outline"
+          className="flex-1 font-bold border-2"
+          data-testid="btn-save-for-later"
+        >
+          {isSavingForLater ? "Saving…" : "Save for later"}
+        </Button>
+        <Button
+          onClick={() => runWithDupCheck("sync")}
+          disabled={!isValid || isSavingForLater}
+          size="lg"
+          className="flex-1 font-bold"
+          data-testid="btn-start-sync"
+        >
+          Sync now
+        </Button>
+      </div>
 
       <AlertDialog
         open={dupMessage !== null}
@@ -343,7 +403,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
             <AlertDialogAction
               onClick={() => {
                 setDupMessage(null);
-                setIsSyncing(true);
+                proceedWithAction(pendingActionRef.current);
               }}
               data-testid="btn-dup-yes"
             >
