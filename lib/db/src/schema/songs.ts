@@ -14,6 +14,7 @@ export const songsTable = pgTable("songs", {
   dateAdded: timestamp("date_added", { withTimezone: true }).notNull().defaultNow(),
   lastPlayed: timestamp("last_played", { withTimezone: true }),
   csvFilename: text("csv_filename"),
+  vocabCsvFilename: text("vocab_csv_filename"),
 });
 
 export const insertSongSchema = createInsertSchema(songsTable).omit({

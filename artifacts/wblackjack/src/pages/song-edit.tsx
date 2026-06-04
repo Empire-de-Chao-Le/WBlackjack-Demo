@@ -184,6 +184,7 @@ export default function SongEdit() {
       if (title.trim() && title !== song.title) patchData.title = title.trim();
       if (language.trim() && language !== song.language) patchData.language = language.trim();
       if (newLyricsFileName) patchData.csvFilename = newLyricsFileName;
+      if (newVocabFileName) patchData.vocabCsvFilename = newVocabFileName;
 
       if (Object.keys(patchData).length > 0) {
         const res = await fetch(`/api/songs/${id}`, {

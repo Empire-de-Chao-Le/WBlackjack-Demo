@@ -9,4 +9,5 @@ export const EditSongBody = z.object({
   timesPlayed: z.number().int().optional(),
   lastPlayed: z.string().nullable().optional(),
   csvFilename: z.string().optional(),
+  vocabCsvFilename: z.string().optional(),
 });

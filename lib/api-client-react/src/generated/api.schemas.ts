@@ -35,6 +35,8 @@ export interface Song {
   hasTimestamps?: boolean;
   /** @nullable */
   csvFilename?: string | null;
+  /** @nullable */
+  vocabCsvFilename?: string | null;
 }
 
 export interface SongInput {

@@ -43,9 +43,9 @@ export default function SongVocab() {
               <p className="text-sm text-muted-foreground">
                 {song.artist} — {song.title}
               </p>
-              {song.csvFilename && (
+              {song.vocabCsvFilename && (
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  Source: {song.csvFilename}
+                  Source: {song.vocabCsvFilename}
                 </p>
               )}
             </>
