@@ -109,6 +109,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
   const [csvFilename, setCsvFilename] = useState<string | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [vocabCsvText, setVocabCsvText] = useState<string | null>(null);
+  const [vocabCsvFilename, setVocabCsvFilename] = useState<string | null>(null);
   const [vocabCsvError, setVocabCsvError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSavingForLater, setIsSavingForLater] = useState(false);
@@ -154,7 +155,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
 
   const handleVocabUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) { setVocabCsvText(null); return; }
+    if (!file) { setVocabCsvText(null); setVocabCsvFilename(null); return; }
     setVocabCsvError(null);
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -166,9 +167,11 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
           `Row ${badRow + 1} has only ${parsed.data[badRow].length} column(s) — need 2 (phrase, translation).`
         );
         setVocabCsvText(null);
+        setVocabCsvFilename(null);
         return;
       }
       setVocabCsvText(text);
+      setVocabCsvFilename(file.name);
     };
     reader.readAsText(file);
   };
@@ -245,6 +248,13 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
           body: vocabCsvText,
           headers: { "Content-Type": "text/csv" },
         });
+        if (vocabCsvFilename) {
+          await fetch(`/api/songs/${songId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ vocabCsvFilename }),
+            headers: { "Content-Type": "application/json" },
+          });
+        }
       }
       queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
       onSongAdded?.();
@@ -268,6 +278,7 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
           onSongAdded?.();
         }}
         vocabCsv={vocabCsvText ?? undefined}
+        vocabCsvFilename={vocabCsvFilename ?? undefined}
         lines={csvData.map((row, idx) => ({
           lineIndex: idx,
           original: row[0] ?? "",

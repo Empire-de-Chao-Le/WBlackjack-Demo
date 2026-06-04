@@ -55,6 +55,7 @@ interface Props {
   onExit: () => void;
   onSaved: () => void;
   vocabCsv?: string;
+  vocabCsvFilename?: string;
   existingSongId?: number;
   csvFilename?: string;
 }
@@ -64,7 +65,7 @@ function extractVideoId(url: string): string {
   return match ? match[1] : url;
 }
 
-export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved, vocabCsv, existingSongId, csvFilename }: Props) {
+export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, onSaved, vocabCsv, vocabCsvFilename, existingSongId, csvFilename }: Props) {
   const queryClient = useQueryClient();
   const playerRef = useRef<YTPlayer | null>(null);
   const initRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -152,6 +153,13 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
           body: vocabCsv,
           headers: { "Content-Type": "text/csv" },
         });
+        if (vocabCsvFilename) {
+          await fetch(`/api/songs/${songId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ vocabCsvFilename }),
+            headers: { "Content-Type": "application/json" },
+          });
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
