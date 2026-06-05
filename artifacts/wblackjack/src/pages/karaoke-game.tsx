@@ -358,7 +358,9 @@ export default function KaraokeGame() {
     const allLineFilled = lineGaps.every((g) => filledGaps.has(g.id));
     if (!allLineFilled) return;
 
-    // Cancel the grace-period timer and any in-flight fade.
+    // Determine how far the fade sequence got before the line was completed.
+    const stillInGrace = fadeGraceRef.current !== null;
+
     if (fadeGraceRef.current) {
       clearTimeout(fadeGraceRef.current);
       fadeGraceRef.current = null;
@@ -367,13 +369,21 @@ export default function KaraokeGame() {
       clearInterval(fadeIntervalRef.current);
       fadeIntervalRef.current = null;
     }
-    playerRef.current?.setVolume(100);
-    // Seek back to the start of the paused line so it plays from the beginning.
-    if (resumeSeekMsRef.current !== null) {
-      playerRef.current?.seekTo(resumeSeekMsRef.current / 1000, true);
+
+    if (stillInGrace) {
+      // Completed within the grace period — video is still playing at full
+      // volume.  Just cancel the timer and carry on; no seek, no replay.
       resumeSeekMsRef.current = null;
+    } else {
+      // Fade had already started (or video is already paused) — restore
+      // volume, seek back to the line start, and resume playback.
+      playerRef.current?.setVolume(100);
+      if (resumeSeekMsRef.current !== null) {
+        playerRef.current?.seekTo(resumeSeekMsRef.current / 1000, true);
+        resumeSeekMsRef.current = null;
+      }
+      playerRef.current?.playVideo();
     }
-    playerRef.current?.playVideo();
     setPausedLineIndex(null);
   }, [filledGaps, pausedLineIndex, gaps, playerReady]);
 
