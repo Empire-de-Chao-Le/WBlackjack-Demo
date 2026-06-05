@@ -117,16 +117,19 @@ function buildGaps(lyrics: LyricLine[], difficulty: number): Gap[] {
  *
  * Returns 4 arrays (one per stack); each array is consumed front-to-back.
  */
-function buildStacks(gaps: Gap[]): string[][] {
+function buildStacks(gaps: Gap[]): { stacks: string[][]; gapStackMap: Map<string, number> } {
   const stacks: string[][] = [[], [], [], []];
+  const gapStackMap = new Map<string, number>();
   for (let g = 0; g < gaps.length; g += 4) {
     const group = gaps.slice(g, g + 4);
     const slotOrder = shuffle([0, 1, 2, 3]);
     group.forEach((gap, i) => {
-      stacks[slotOrder[i]].push(gap.word);
+      const stackIdx = slotOrder[i];
+      stacks[stackIdx].push(gap.word);
+      gapStackMap.set(gap.id, stackIdx);
     });
   }
-  return stacks;
+  return { stacks, gapStackMap };
 }
 
 function SpinningWheel({ size = "sm" }: { size?: "sm" | "lg" }) {
@@ -176,6 +179,7 @@ export default function KaraokeGame() {
    * from that stack; wrong taps leave stacks unchanged.
    */
   const [stacks, setStacks] = useState<string[][]>([[], [], [], []]);
+  const [gapStackMap, setGapStackMap] = useState<Map<string, number>>(new Map());
   const [hits, setHits] = useState(0);
   const [fails, setFails] = useState(0);
   /** lineIndex (data-model) of the line that caused a pause; null when not paused */
@@ -195,7 +199,9 @@ export default function KaraokeGame() {
   // Build stacks once gaps are ready (or whenever the gap set changes).
   useEffect(() => {
     if (gaps.length === 0) return;
-    setStacks(buildStacks(gaps));
+    const { stacks, gapStackMap } = buildStacks(gaps);
+    setStacks(stacks);
+    setGapStackMap(gapStackMap);
   }, [gaps]);
 
   const extractVideoId = (url: string): string => {
@@ -388,15 +394,20 @@ export default function KaraokeGame() {
         const isFirstTry = !filledGaps.has(targetGap.id + "_miss");
         setFilledGaps((prev) => {
           const next = new Map(prev);
-          next.set(targetGap.id, { word, firstTry: isFirstTry });
+          // Always fill with the canonical gap word, regardless of which
+          // button was tapped (handles duplicate-word scenarios correctly).
+          next.set(targetGap.id, { word: targetGap.word, firstTry: isFirstTry });
           return next;
         });
         if (isFirstTry) setHits((h) => h + 1);
 
-        // Pop the top card from the tapped stack — the next card (if any) in
-        // that stack now becomes visible.  The other 3 stacks are untouched.
+        // Pop the stack that owns the current gap — NOT necessarily the tapped
+        // stack.  When the same word appears in multiple slots, the user may tap
+        // any of them; we consume the correct instance from its assigned stack
+        // and leave every other slot untouched.
+        const correctStackIdx = gapStackMap.get(targetGap.id) ?? slotIdx;
         setStacks((prev) =>
-          prev.map((s, i) => (i === slotIdx ? s.slice(1) : s))
+          prev.map((s, i) => (i === correctStackIdx ? s.slice(1) : s))
         );
       } else {
         // ── Wrong ────────────────────────────────────────────────────────────
@@ -411,7 +422,7 @@ export default function KaraokeGame() {
         // Stacks are unchanged — the correct card is still in another stack.
       }
     },
-    [currentGapIdx, gaps, filledGaps]
+    [currentGapIdx, gaps, filledGaps, gapStackMap]
   );
 
   // Keyboard shortcuts: 1–4 fire the corresponding dock slot.

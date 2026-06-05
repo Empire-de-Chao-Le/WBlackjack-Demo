@@ -1,0 +1,13 @@
+in the Karaoke game : there is a potential issue when there are two or more identical words in the answers. When the same word appears multiple times in a song and multiple instances of the same word are marked for blanks (a very likely situation in 100% difficulty), two or three instances of the same word appear in the 4-Slot-Dock, looking completely identical. Please check if currently clicking ANY instance of the word in this situation is accepted as correct. If yes, this creates a possibility deadlocks as the stack advances in the wrong way, and the next correct answer may get locked behind the previous correct one if an identical word but an incorrect instance was clicked before. 
+Proposed fix: 
+When a button in the 4-Slot-Dock is tapped, the apps cheks if the word TEXT matches the next expected word in the sequence. 
+If YES, the app places the correct text to the lyrics regardless of which actual instance of the correct word I tapped in the 4-Slot-Dock. 
+At the same time, the app finds the CORRECT instance of this words (the one that's actually next in line) among the 4 buttons and clears the CORRECT instance. This might or might not be the one I tapped. 
+If the word TEXT does not match the next expected word in the sequence - the respond is for the incorrect answer, as before. 
+
+Overall logic: I see several words amont the 4 buttons - e.g. "love" - and the next blanked out word in the song is "love". for me, all "love" are identical, and I tap any of them. the app must accept it as a correct answer and place the word in the blank, as I was right that the next word is "love". but for the algorythm, it's actually "love1", "love2" etc, they have internal sequence invisible to me. while placing the correct answer to the lyrics, the app must clear the correct "love" - the first one in the sequence - "love1", even if I tapped the button that is internally labelled as "love2". 
+
+that is, if the sequence needs "love1" but I click a button "love2" (both are displayed as just the text - just "love"! do not add any markers for the user), the app should:
+    Accept it as correct (the word is right!) and place "love" to the lyrics instead of the blank
+    Clear/advance "love1" instead
+    Leave "love2" on its place for later. 
