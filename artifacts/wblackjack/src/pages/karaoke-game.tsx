@@ -161,6 +161,7 @@ export default function KaraokeGame() {
 
   const playerRef = useRef<YTPlayer | null>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fadeGraceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lineTrackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lyricsScrollRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -251,40 +252,48 @@ export default function KaraokeGame() {
     return () => {
       if (initRetryRef.current) clearTimeout(initRetryRef.current);
       if (lineTrackIntervalRef.current) clearInterval(lineTrackIntervalRef.current);
+      if (fadeGraceRef.current) clearTimeout(fadeGraceRef.current);
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
     };
   }, [song, initPlayer]);
 
   // ── Fade, pause & seek back to line start ───────────────────────────────────
+  // Behaviour: 1 s grace period, then a 1 s fade (10 % × 100 ms), then pause.
+  // Total time from trigger to pause: 2 s — same as before, but the first
+  // second is silent so finishing the line cancels the whole sequence.
   function startFadeAndPause(
     lineDataIndex: number,
     seekMs: number | null,
     lineArrIdx: number
   ) {
-    if (fadeIntervalRef.current) return; // already fading
+    if (fadeIntervalRef.current || fadeGraceRef.current) return; // already queued or fading
     setPausedLineIndex(lineDataIndex);
     // Reset the "previous" pointer so that after seek-back, the tracker
     // doesn't see a spurious forward jump and retrigger.
     prevActiveArrIdxRef.current = lineArrIdx;
     resumeSeekMsRef.current = seekMs;
 
-    let vol = 100;
-    fadeIntervalRef.current = setInterval(() => {
-      vol -= 10;
-      if (vol <= 0) {
-        playerRef.current?.setVolume(0);
-        playerRef.current?.pauseVideo();
-        if (seekMs !== null) {
-          playerRef.current?.seekTo(seekMs / 1000, true);
+    // 1-second grace period before the fade begins.
+    fadeGraceRef.current = setTimeout(() => {
+      fadeGraceRef.current = null;
+      let vol = 100;
+      fadeIntervalRef.current = setInterval(() => {
+        vol -= 10;
+        if (vol <= 0) {
+          playerRef.current?.setVolume(0);
+          playerRef.current?.pauseVideo();
+          if (seekMs !== null) {
+            playerRef.current?.seekTo(seekMs / 1000, true);
+          }
+          if (fadeIntervalRef.current) {
+            clearInterval(fadeIntervalRef.current);
+            fadeIntervalRef.current = null;
+          }
+        } else {
+          playerRef.current?.setVolume(vol);
         }
-        if (fadeIntervalRef.current) {
-          clearInterval(fadeIntervalRef.current);
-          fadeIntervalRef.current = null;
-        }
-      } else {
-        playerRef.current?.setVolume(vol);
-      }
-    }, 200);
+      }, 100); // 2× faster: 100 ms per step → 1 s total fade
+    }, 1000);
   }
 
   // ── Line-tracking interval ────────────────────────────────────────────────────
@@ -349,7 +358,11 @@ export default function KaraokeGame() {
     const allLineFilled = lineGaps.every((g) => filledGaps.has(g.id));
     if (!allLineFilled) return;
 
-    // Cancel any in-flight fade.
+    // Cancel the grace-period timer and any in-flight fade.
+    if (fadeGraceRef.current) {
+      clearTimeout(fadeGraceRef.current);
+      fadeGraceRef.current = null;
+    }
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
       fadeIntervalRef.current = null;
