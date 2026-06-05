@@ -635,7 +635,13 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
               <button
                 key={i}
                 onClick={() => handleSelect(opt)}
-                className="w-full min-h-14 px-4 py-3 rounded-xl border-2 font-medium transition-all border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground pl-[10px] pr-[10px] pt-[10px] pb-[10px] text-[20px]"
+                className={`w-full min-h-14 px-4 py-3 rounded-xl border-2 font-medium transition-all pl-[10px] pr-[10px] pt-[10px] pb-[10px] text-[20px] ${
+                  isCorrectSelected
+                    ? "border-green-400 bg-green-400/10 text-green-300"
+                    : isWrong
+                    ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95"
+                    : "border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground"
+                }`}
                 data-testid={`btn-option-${i}`}
               >
                 {opt}
