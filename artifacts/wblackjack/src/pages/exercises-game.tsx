@@ -689,6 +689,7 @@ export default function ExercisesGame() {
   const [score, setScore] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
   const [voiceDebug, setVoiceDebug] = useState<string | null>(null);
+  const continuingRef = useRef(false);
 
   const showVoiceDebug = () => {
     const voices = window.speechSynthesis?.getVoices() ?? [];
@@ -713,15 +714,18 @@ export default function ExercisesGame() {
   }, [lyrics, vocab]);
 
   const handleContinue = async () => {
+    if (continuingRef.current) return;
+    continuingRef.current = true;
+
     const solved = !gaveUp;
     setGaveUp(false);
+    if (solved) setScore((s) => s + 1);
+
     if (lesson < 9) {
-      if (solved) setScore((s) => s + 1);
       setLesson((prev) => prev + 1);
       setKey((k) => k + 1);
+      continuingRef.current = false;
     } else {
-      const finalScore = score + (solved ? 1 : 0);
-      setScore(finalScore);
       await recordPlay.mutateAsync({ id });
       queryClient.invalidateQueries({ queryKey: getGetSongQueryKey(id) });
       setSessionDone(true);
