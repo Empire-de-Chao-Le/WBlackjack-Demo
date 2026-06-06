@@ -6,6 +6,7 @@ import {
   useGetSongLyrics,
   useUploadLyricsCsv,
   getGetSongQueryKey,
+  getGetSongLyricsQueryKey,
   getListSongsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -209,6 +210,7 @@ export default function SongEdit() {
       }
 
       queryClient.invalidateQueries({ queryKey: getGetSongQueryKey(id) });
+      queryClient.invalidateQueries({ queryKey: getGetSongLyricsQueryKey(id) });
       queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
       setLocation(`/song/${id}`);
     } catch (e) {

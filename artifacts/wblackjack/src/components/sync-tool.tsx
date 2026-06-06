@@ -17,6 +17,7 @@ import {
   useSaveTimestamps,
   getListSongsQueryKey,
   getGetSongQueryKey,
+  getGetSongLyricsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -127,13 +128,15 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
       if (existingSongId) {
         songId = existingSongId;
         if (csvFilename) {
+          // New CSV was uploaded — persist the filename and replace the lyrics.
           await fetch(`/api/songs/${songId}`, {
             method: "PATCH",
             body: JSON.stringify({ csvFilename }),
             headers: { "Content-Type": "application/json" },
           });
+          await upsertLyrics.mutateAsync({ id: songId, data: { lines } });
         }
-        // Lyrics are already stored — skip upsert to preserve the saved distractors/translations
+        // No csvFilename → timestamps-only re-sync; existing lyrics are preserved.
       } else {
         const song = await createSong.mutateAsync({
           data: { artist, title, youtubeUrl, language, csvFilename },
@@ -165,6 +168,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
       queryClient.invalidateQueries({ queryKey: getListSongsQueryKey() });
       if (existingSongId) {
         queryClient.invalidateQueries({ queryKey: getGetSongQueryKey(existingSongId) });
+        queryClient.invalidateQueries({ queryKey: getGetSongLyricsQueryKey(existingSongId) });
       }
       onSaved();
     } catch (e) {
