@@ -178,7 +178,7 @@ export function LanguagesTab() {
         {/* The World — always first; no word pool view */}
         <button
           onClick={() => setLocation("/flashcards/world")}
-          className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card hover:bg-muted/60 hover:border-primary/40 transition-all p-6 aspect-square shadow-sm active:scale-95"
+          className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card hover:bg-muted/60 hover:border-primary/40 transition-all p-6 aspect-square shadow-sm active:scale-95 pl-[12px] pr-[12px] pt-[0px] pb-[0px]"
         >
           <span className="text-[58px]">🌍</span>
           <span className="font-semibold capitalize text-foreground text-[19px]">The World</span>
