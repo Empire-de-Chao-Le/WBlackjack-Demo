@@ -180,8 +180,8 @@ export function LanguagesTab() {
           onClick={() => setLocation("/flashcards/world")}
           className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card hover:bg-muted/60 hover:border-primary/40 transition-all p-6 aspect-square shadow-sm active:scale-95"
         >
-          <span className="text-6xl leading-none">🌍</span>
-          <span className="font-semibold capitalize text-foreground text-[20px]">The World</span>
+          <span className="text-[58px]">🌍</span>
+          <span className="font-semibold capitalize text-foreground text-[19px]">The World</span>
           {worldCount !== undefined && (
             <span className="text-muted-foreground text-[14px]">
               {worldCount} words of Babylonian Chaos!
@@ -203,8 +203,8 @@ export function LanguagesTab() {
                   onClick={() => setLocation(`/flashcards/${encodeURIComponent(lang)}`)}
                   className="flex-1 flex flex-col items-center justify-center gap-1 px-3 hover:bg-primary/5 active:bg-primary/10 transition-colors"
                 >
-                  <span className="text-[60px]">{getLanguageFlag(lang)}</span>
-                  <span className="font-semibold capitalize text-foreground text-[20px]">{lang}</span>
+                  <span className="text-[58px]">{getLanguageFlag(lang)}</span>
+                  <span className="font-semibold capitalize text-foreground text-[19px]">{lang}</span>
                   {count !== undefined && (
                     <span className="text-muted-foreground text-[14px]">
                       {count} {count === 1 ? "word" : "words"}
@@ -215,7 +215,7 @@ export function LanguagesTab() {
                 {/* Bottom: "Take a look" stretched across the full width */}
                 <button
                   onClick={() => setPoolLang(lang)}
-                  className="shrink-0 w-full py-3 font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border text-[16px] pt-[6px] pb-[6px]"
+                  className="shrink-0 w-full py-3 font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors border-t border-border text-[16px] pt-[8px] pb-[8px]"
                 >
                   Take a look
                 </button>
