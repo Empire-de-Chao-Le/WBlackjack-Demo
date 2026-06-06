@@ -548,7 +548,12 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
 
   const correct = selected !== null && stripPunct(selected).toLowerCase() === stripPunct(targetWord).toLowerCase();
   useContinueOnKey(correct, onContinue);
-  useEffect(() => { if (gaveUp) setSelected(targetWord); }, [gaveUp]);
+  useEffect(() => {
+    if (gaveUp) {
+      setSelected(targetWord);
+      speak(line.original, songLanguage);
+    }
+  }, [gaveUp]);
 
   useEffect(() => {
     let cancelled = false;
