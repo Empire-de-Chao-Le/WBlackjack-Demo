@@ -33,12 +33,14 @@ function extractVideoId(url: string): string {
 function AutocompleteInput({
   value,
   onChange,
+  onSelect,
   suggestions,
   placeholder,
   testId,
 }: {
   value: string;
   onChange: (v: string) => void;
+  onSelect?: (v: string) => void;
   suggestions: string[];
   placeholder?: string;
   testId?: string;
@@ -86,6 +88,7 @@ function AutocompleteInput({
               onMouseDown={(e) => {
                 e.preventDefault();
                 onChange(s);
+                onSelect?.(s);
                 setOpen(false);
               }}
             >
@@ -125,6 +128,14 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
 
   const artistSuggestions = (artists ?? []) as string[];
   const languageSuggestions = (languages ?? []) as string[];
+
+  // Map each known artist to their language (first song found wins).
+  const artistLanguageMap = new Map<string, string>();
+  for (const s of (songs ?? []) as { artist: string; language: string }[]) {
+    if (s.artist && s.language && !artistLanguageMap.has(s.artist)) {
+      artistLanguageMap.set(s.artist, s.language);
+    }
+  }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -300,6 +311,10 @@ export function SongLab({ onSongAdded }: { onSongAdded?: () => void } = {}) {
           <AutocompleteInput
             value={artist}
             onChange={setArtist}
+            onSelect={(v) => {
+              const lang = artistLanguageMap.get(v);
+              if (lang) setLanguage(lang);
+            }}
             suggestions={artistSuggestions}
             placeholder="e.g. Stromae"
             testId="input-artist"
