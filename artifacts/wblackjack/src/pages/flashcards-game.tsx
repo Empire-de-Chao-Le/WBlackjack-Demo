@@ -446,28 +446,25 @@ export default function FlashcardsGame() {
   const totalQ = questions.length;
   const progressPct = (currentIdx / totalQ) * 100;
 
-  // Card colors
-  const qCardBg =
+  // Card colors — outline style (matches Missing Word exercise)
+  const qCardStyle =
     isCorrect === null
-      ? "bg-card"
+      ? "bg-card text-foreground border-border"
       : isCorrect
-      ? "bg-[#4ade80]"
-      : "bg-[#f87171]";
-
-  const qCardText =
-    isCorrect === null ? "text-foreground" : "text-white";
+      ? "bg-green-400/10 text-green-300 border-green-400"
+      : "bg-pink-500/10 text-pink-300 border-pink-500";
 
   const optionClass = (opt: string) => {
     if (selectedOption === null) {
-      return "bg-card text-foreground hover:bg-muted/60 active:scale-[0.98]";
+      return "border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted active:scale-[0.98]";
     }
     if (opt === currentQ.correctOption) {
-      return "bg-[#4ade80] text-white";
+      return "border-green-400 bg-green-400/10 text-green-300";
     }
     if (opt === selectedOption) {
-      return "bg-[#f87171] text-white";
+      return "border-pink-500 bg-pink-500/10 text-pink-300";
     }
-    return "bg-card text-foreground opacity-50";
+    return "border-border bg-card text-foreground opacity-50";
   };
 
   return (
@@ -549,14 +546,14 @@ export default function FlashcardsGame() {
         onClick={handleQuestionCardClick}
         disabled={selectedOption === null}
         className={`
-          w-full rounded-3xl border border-border shadow-sm
+          w-full rounded-3xl border-2 shadow-sm
           flex items-center justify-center p-8 mb-5
           min-h-[180px] transition-colors duration-150
-          ${qCardBg}
+          ${qCardStyle}
           ${selectedOption !== null ? "cursor-pointer active:scale-[0.99]" : "cursor-default"}
         `}
       >
-        <span className={`text-3xl font-bold text-center leading-snug ${qCardText}`}>
+        <span className="text-3xl font-bold text-center leading-snug">
           {currentQ.questionText}
         </span>
       </button>
@@ -569,7 +566,7 @@ export default function FlashcardsGame() {
             onClick={() => handleOptionClick(opt)}
             disabled={selectedOption !== null}
             className={`
-              w-full rounded-2xl border border-border shadow-sm
+              w-full rounded-2xl border-2 shadow-sm
               px-6 py-4 text-xl font-bold
               flex items-center gap-4
               transition-all duration-150
