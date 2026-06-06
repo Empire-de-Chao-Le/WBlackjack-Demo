@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useAndroidBack } from "@/hooks/useAndroidBack";
 import {
@@ -69,6 +69,9 @@ export default function SongEdit() {
   // Re-sync with new CSV lines (overrides existing syncLines)
   const [resyncLines, setResyncLines] = useState<LyricLineInput[] | null>(null);
   const [resyncFilename, setResyncFilename] = useState<string | null>(null);
+  // Tracks whether the user clicked "Re-Sync" so onOpenChange doesn't
+  // call handleMismatchGoBack (which clears resyncFilename) on that path.
+  const resyncPendingRef = useRef(false);
 
   const [newVocabCsvText, setNewVocabCsvText] = useState<string | null>(null);
   const [newVocabFileName, setNewVocabFileName] = useState<string | null>(null);
@@ -137,6 +140,9 @@ export default function SongEdit() {
 
   const handleMismatchResync = () => {
     if (!pendingNewRows) return;
+    // Signal to onOpenChange that it should NOT call handleMismatchGoBack,
+    // because we are intentionally proceeding — resyncFilename must survive.
+    resyncPendingRef.current = true;
     const lines: LyricLineInput[] = pendingNewRows.map((row, idx) => ({
       lineIndex: idx,
       original: row[0] ?? "",
@@ -263,7 +269,7 @@ export default function SongEdit() {
   return (
     <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-6">
       {/* Line-count mismatch dialog */}
-      <AlertDialog open={showMismatchDialog} onOpenChange={(open) => { if (!open) handleMismatchGoBack(); }}>
+      <AlertDialog open={showMismatchDialog} onOpenChange={(open) => { if (!open) { if (resyncPendingRef.current) { resyncPendingRef.current = false; } else { handleMismatchGoBack(); } } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-950">
