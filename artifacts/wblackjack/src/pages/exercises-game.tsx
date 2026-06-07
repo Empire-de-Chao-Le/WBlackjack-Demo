@@ -123,7 +123,7 @@ function logVoicesOnce(voices: SpeechSynthesisVoice[]) {
 }
 
 // Language names that map to Minnan / Taiwanese Hokkien.
-// These are routed to Azure Neural TTS (nan-TW) instead of the browser.
+// These are routed to DashScope Qwen3-TTS (Minnan instruction) instead of the browser.
 const MINNAN_NAMES = new Set([
   "minnan", "min nan", "min-nan", "hokkien", "taiwanese hokkien", "southern min",
   "台語", "閩南語", "闽南语",
@@ -146,7 +146,7 @@ async function speakMinnan(text: string, gen: number): Promise<void> {
     audio.onended = () => { URL.revokeObjectURL(url); if (_currentMinnanAudio === audio) _currentMinnanAudio = null; };
     audio.onerror = () => { URL.revokeObjectURL(url); if (_currentMinnanAudio === audio) _currentMinnanAudio = null; };
     // eslint-disable-next-line no-console
-    console.log("[TTS] Minnan → Azure Neural TTS (nan-TW-A-saiNeural)");
+    console.log("[TTS] Minnan → DashScope Qwen3-TTS-instruct (Hokkien instruction)");
     await audio.play();
   } catch (e) {
     // eslint-disable-next-line no-console

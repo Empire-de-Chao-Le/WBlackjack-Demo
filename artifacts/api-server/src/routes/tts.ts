@@ -37,9 +37,15 @@ router.post("/tts/minnan", async (req, res): Promise<void> => {
         input: {
           text: text.trim(),
           voice: "Cherry",
-          language_type: "Chinese",
+          // Do NOT set language_type: "Chinese" — that pins the model to Mandarin
+          // and overrides the instruction. Let the model infer from the instruction.
           instruction:
-            "請用台語（臺灣閩南語）朗讀這段文字。聲調和發音請完全按照台語規則，不要用普通話發音。",
+            "Speak this text in Taiwanese Hokkien (台語 / 閩南語 / Southern Min). " +
+            "This is NOT Mandarin. Use Min Nan phonology: " +
+            "你=lí, 好=hó, 我=góa, 是=sī, 有=ū, 無=bô, 食=tsia̍h, 飲=lim, 愛=ài, 來=lâi, 去=khì, " +
+            "人=lâng, 甲=kah, 佮=kah, 嘛=mā, 啊=ah. " +
+            "Tone the syllables with Min Nan tones (not Mandarin tones). " +
+            "請完全用台語（閩南語）的發音朗讀，不要用普通話。",
         },
       }),
     });
