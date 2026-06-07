@@ -2,15 +2,38 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
-const DASHSCOPE_ENDPOINT =
-  "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+/**
+ * 台灣媠聲 (ÌTHUÂN / Taiwan TTS) — the Taiwan Ministry of Education Taiwanese Hokkien
+ * (台語 / 閩南語 / Southern Min) speech-synthesis service. Unlike Qwen3-TTS or Azure
+ * (which only expose Mandarin / Taiwanese-Mandarin voices and CANNOT produce real
+ * Hokkien), this endpoint synthesises authentic Taiwanese Hokkien from Han characters.
+ *
+ * It takes a `taibun` form field (Taiwanese Han text) and returns an MP3 stream.
+ * Best suited to short words / phrases (which is exactly what the flashcards use);
+ * very long sentences can return HTTP 500.
+ */
+const ITHUAN_ENDPOINT = "https://hapsing.ithuan.tw/bangtsam";
+
+// The upstream service degrades / returns HTTP 500 on long inputs. Flashcards are
+// short words/phrases, so cap input length and fail fast with a clear message.
+const MAX_TEXT_LENGTH = 80;
+
+// Abort the upstream request if it hangs, so we never block a worker indefinitely.
+const UPSTREAM_TIMEOUT_MS = 12_000;
+
+function looksLikeMp3(buf: Buffer): boolean {
+  if (buf.length < 4) return false;
+  // ID3 tag
+  if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return true;
+  // MPEG frame sync (0xFFE...)
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return true;
+  return false;
+}
 
 /**
  * POST /tts/minnan
  * Body: { text: string }
- * Calls Alibaba Cloud DashScope Qwen3-TTS-instruct-flash with a Minnan (Taiwanese Hokkien)
- * instruction, fetches the resulting WAV, and streams it back as audio/wav.
- * The API key never leaves the server.
+ * Synthesises Taiwanese Hokkien audio for `text` and streams it back as audio/mpeg.
  */
 router.post("/tts/minnan", async (req, res): Promise<void> => {
   const { text } = req.body ?? {};
@@ -19,81 +42,55 @@ router.post("/tts/minnan", async (req, res): Promise<void> => {
     return;
   }
 
-  const apiKey = process.env.DASHSCOPE_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ error: "DASHSCOPE_API_KEY is not configured" });
+  const trimmed = text.trim();
+  if (trimmed.length > MAX_TEXT_LENGTH) {
+    res.status(400).json({
+      error: `text too long for Taiwanese TTS (max ${MAX_TEXT_LENGTH} chars); use shorter phrases`,
+    });
     return;
   }
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+
   try {
-    const ttsRes = await fetch(DASHSCOPE_ENDPOINT, {
+    const form = new URLSearchParams();
+    form.append("taibun", trimmed);
+
+    const ttsRes = await fetch(ITHUAN_ENDPOINT, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "qwen3-tts-instruct-flash",
-        input: {
-          text: text.trim(),
-          voice: "Cherry",
-          // Do NOT set language_type: "Chinese" — that pins the model to Mandarin
-          // and overrides the instruction. Let the model infer from the instruction.
-          instruction:
-            "Speak this text in Taiwanese Hokkien (台語 / 閩南語 / Southern Min). " +
-            "This is NOT Mandarin. Use Min Nan phonology: " +
-            "你=lí, 好=hó, 我=góa, 是=sī, 有=ū, 無=bô, 食=tsia̍h, 飲=lim, 愛=ài, 來=lâi, 去=khì, " +
-            "人=lâng, 甲=kah, 佮=kah, 嘛=mā, 啊=ah. " +
-            "Tone the syllables with Min Nan tones (not Mandarin tones). " +
-            "請完全用台語（閩南語）的發音朗讀，不要用普通話。",
-        },
-      }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+      signal: controller.signal,
     });
 
     if (!ttsRes.ok) {
       const errText = await ttsRes.text();
       res
-        .status(ttsRes.status)
-        .json({ error: `DashScope TTS error ${ttsRes.status}: ${errText}` });
+        .status(502)
+        .json({ error: `Taiwanese TTS error ${ttsRes.status}: ${errText.slice(0, 200)}` });
       return;
     }
 
-    const json = (await ttsRes.json()) as {
-      output?: { audio?: { url?: string; data?: string } };
-    };
+    const buf = Buffer.from(await ttsRes.arrayBuffer());
 
-    const audioUrl = json?.output?.audio?.url;
-    const audioData = json?.output?.audio?.data;
-
-    if (audioData && audioData.length > 0) {
-      // Base64-encoded PCM/WAV data returned directly
-      const buf = Buffer.from(audioData, "base64");
-      res.setHeader("Content-Type", "audio/wav");
-      res.setHeader("Cache-Control", "no-cache");
-      res.end(buf);
+    // Guard against tiny/empty or non-audio responses on anomalous 200s.
+    if (buf.length < 256 || !looksLikeMp3(buf)) {
+      res.status(502).json({ error: "Taiwanese TTS returned invalid audio" });
       return;
     }
 
-    if (audioUrl) {
-      // Fetch the audio file from the temporary URL and proxy it to the client
-      const audioRes = await fetch(audioUrl);
-      if (!audioRes.ok) {
-        res
-          .status(502)
-          .json({ error: `Failed to fetch audio from DashScope URL: ${audioRes.status}` });
-        return;
-      }
-      const buf = Buffer.from(await audioRes.arrayBuffer());
-      const ct = audioRes.headers.get("content-type") ?? "audio/wav";
-      res.setHeader("Content-Type", ct);
-      res.setHeader("Cache-Control", "no-cache");
-      res.end(buf);
-      return;
-    }
-
-    res.status(502).json({ error: "DashScope returned no audio data or URL" });
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-cache");
+    res.end(buf);
   } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      res.status(504).json({ error: "Taiwanese TTS timed out" });
+      return;
+    }
     res.status(500).json({ error: String(e) });
+  } finally {
+    clearTimeout(timer);
   }
 });
 
