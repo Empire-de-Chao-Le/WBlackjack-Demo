@@ -2,20 +2,15 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
+const DASHSCOPE_ENDPOINT =
+  "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
 
 /**
  * POST /tts/minnan
  * Body: { text: string }
- * Proxies to Azure Cognitive Services Neural TTS (nan-TW locale, A-saiNeural voice)
- * and streams back the MP3 audio. The API key never leaves the server.
+ * Calls Alibaba Cloud DashScope Qwen3-TTS-instruct-flash with a Minnan (Taiwanese Hokkien)
+ * instruction, fetches the resulting WAV, and streams it back as audio/wav.
+ * The API key never leaves the server.
  */
 router.post("/tts/minnan", async (req, res): Promise<void> => {
   const { text } = req.body ?? {};
@@ -24,46 +19,73 @@ router.post("/tts/minnan", async (req, res): Promise<void> => {
     return;
   }
 
-  const key = process.env.AZURE_TTS_KEY;
-  const region = process.env.AZURE_TTS_REGION;
-  if (!key || !region) {
-    res.status(500).json({ error: "Azure TTS not configured (missing AZURE_TTS_KEY / AZURE_TTS_REGION)" });
+  const apiKey = process.env.DASHSCOPE_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: "DASHSCOPE_API_KEY is not configured" });
     return;
   }
 
-  // Azure does not offer a nan-TW (Hokkien) voice in all regions.
-  // Fall back to zh-TW-HsiaoYuNeural (Taiwanese Mandarin Female Neural),
-  // the closest available voice for Taiwanese Hokkien content.
-  const ssml = [
-    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-TW'>`,
-    `<voice name='zh-TW-HsiaoYuNeural'>${escapeXml(text.trim())}</voice>`,
-    `</speak>`,
-  ].join("");
-
   try {
-    const azureRes = await fetch(
-      `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-      {
-        method: "POST",
-        headers: {
-          "Ocp-Apim-Subscription-Key": key,
-          "Content-Type": "application/ssml+xml",
-          "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3",
+    const ttsRes = await fetch(DASHSCOPE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "qwen3-tts-instruct-flash",
+        input: {
+          text: text.trim(),
+          voice: "Cherry",
+          language_type: "Chinese",
+          instruction:
+            "請用台語（臺灣閩南語）朗讀這段文字。聲調和發音請完全按照台語規則，不要用普通話發音。",
         },
-        body: ssml,
-      }
-    );
+      }),
+    });
 
-    if (!azureRes.ok) {
-      const errText = await azureRes.text();
-      res.status(azureRes.status).json({ error: `Azure TTS error ${azureRes.status}: ${errText}` });
+    if (!ttsRes.ok) {
+      const errText = await ttsRes.text();
+      res
+        .status(ttsRes.status)
+        .json({ error: `DashScope TTS error ${ttsRes.status}: ${errText}` });
       return;
     }
 
-    const buf = Buffer.from(await azureRes.arrayBuffer());
-    res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader("Cache-Control", "no-cache");
-    res.end(buf);
+    const json = (await ttsRes.json()) as {
+      output?: { audio?: { url?: string; data?: string } };
+    };
+
+    const audioUrl = json?.output?.audio?.url;
+    const audioData = json?.output?.audio?.data;
+
+    if (audioData && audioData.length > 0) {
+      // Base64-encoded PCM/WAV data returned directly
+      const buf = Buffer.from(audioData, "base64");
+      res.setHeader("Content-Type", "audio/wav");
+      res.setHeader("Cache-Control", "no-cache");
+      res.end(buf);
+      return;
+    }
+
+    if (audioUrl) {
+      // Fetch the audio file from the temporary URL and proxy it to the client
+      const audioRes = await fetch(audioUrl);
+      if (!audioRes.ok) {
+        res
+          .status(502)
+          .json({ error: `Failed to fetch audio from DashScope URL: ${audioRes.status}` });
+        return;
+      }
+      const buf = Buffer.from(await audioRes.arrayBuffer());
+      const ct = audioRes.headers.get("content-type") ?? "audio/wav";
+      res.setHeader("Content-Type", ct);
+      res.setHeader("Cache-Control", "no-cache");
+      res.end(buf);
+      return;
+    }
+
+    res.status(502).json({ error: "DashScope returned no audio data or URL" });
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }

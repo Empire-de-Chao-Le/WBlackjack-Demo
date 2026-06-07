@@ -1,1 +1,1 @@
-- [TTS in WBlackjack](tts-wblackjack.md) — speak() is duplicated in exercises-game.tsx & flashcards-game.tsx; fix both. Voice matching must handle script subtags (Mandarin=cmn-Hans-CN).
+- [DashScope Qwen3-TTS endpoint](qwen3-tts-endpoint.md) — correct endpoint is multimodal-generation/generation; voice inside input, NOT top-level
