@@ -56,6 +56,10 @@ let _ttsEnabled: boolean = (() => {
 // listeners and stale setTimeout callbacks from a previous song/language become no-ops.
 let _speakGen = 0;
 
+// Holds the currently-playing Minnan <audio> element so it can be stopped
+// when a new speak() call arrives (Web Speech cancel() doesn't reach it).
+let _currentMinnanAudio: HTMLAudioElement | null = null;
+
 const LANG_MAP: Record<string, string> = {
   polish: "pl-PL", french: "fr-FR", spanish: "es-ES", german: "de-DE",
   italian: "it-IT", portuguese: "pt-PT", russian: "ru-RU", japanese: "ja-JP",
@@ -118,10 +122,49 @@ function logVoicesOnce(voices: SpeechSynthesisVoice[]) {
   );
 }
 
+// Language names that map to Minnan / Taiwanese Hokkien.
+// These are routed to Azure Neural TTS (nan-TW) instead of the browser.
+const MINNAN_NAMES = new Set([
+  "minnan", "min nan", "min-nan", "hokkien", "taiwanese hokkien", "southern min",
+  "台語", "閩南語", "闽南语",
+]);
+
+async function speakMinnan(text: string, gen: number): Promise<void> {
+  if (_currentMinnanAudio) { _currentMinnanAudio.pause(); _currentMinnanAudio = null; }
+  try {
+    const res = await fetch("/api/tts/minnan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (gen !== _speakGen || !res.ok) return;
+    const blob = await res.blob();
+    if (gen !== _speakGen) return;
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _currentMinnanAudio = audio;
+    audio.onended = () => { URL.revokeObjectURL(url); if (_currentMinnanAudio === audio) _currentMinnanAudio = null; };
+    audio.onerror = () => { URL.revokeObjectURL(url); if (_currentMinnanAudio === audio) _currentMinnanAudio = null; };
+    // eslint-disable-next-line no-console
+    console.log("[TTS] Minnan → Azure Neural TTS (nan-TW-A-saiNeural)");
+    await audio.play();
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("[TTS] Minnan Azure TTS error:", e);
+  }
+}
+
 function speak(text: string, langName: string) {
   if (!_ttsEnabled) return;
-  if (!("speechSynthesis" in window)) return;
+  // Stop any currently-playing Minnan audio before starting a new utterance.
+  if (_currentMinnanAudio) { _currentMinnanAudio.pause(); _currentMinnanAudio = null; }
   const gen = ++_speakGen;
+  // Minnan (Taiwanese Hokkien) — no browser voice exists; route to Azure TTS.
+  if (MINNAN_NAMES.has(langName.toLowerCase().trim())) {
+    speakMinnan(text, gen);
+    return;
+  }
+  if (!("speechSynthesis" in window)) return;
   const langCode = LANG_MAP[langName.toLowerCase().trim()] ?? langName;
   function doSpeak() {
     if (gen !== _speakGen) return;
