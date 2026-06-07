@@ -165,10 +165,28 @@ router.get("/flashcards/due/:language", async (req, res): Promise<void> => {
     ...shuffledNew.slice(0, takeNew),
   ];
 
-  // Final fallback: pull the soonest upcoming cards to avoid an empty session
+  // Fallback 1: pull the soonest upcoming (not-yet-due) cards.
   if (session.length < SESSION_SIZE) {
     const need = SESSION_SIZE - session.length;
     session.push(...soonDue.slice(0, need).map((e) => e.id));
+  }
+
+  // Fallback 2: if the whole non-ignored pool is smaller than SESSION_SIZE,
+  // recycle IDs (the frontend randomises direction per occurrence, so the same
+  // word appearing twice produces questions in opposite directions).
+  if (session.length < SESSION_SIZE) {
+    const allNonIgnored = shuffle([
+      ...dueNowIds,
+      ...newIds,
+      ...soonDue.map((e) => e.id),
+    ]);
+    if (allNonIgnored.length > 0) {
+      let i = 0;
+      while (session.length < SESSION_SIZE) {
+        session.push(allNonIgnored[i % allNonIgnored.length]);
+        i++;
+      }
+    }
   }
 
   // Shuffle the combined set so new and review cards are interleaved.

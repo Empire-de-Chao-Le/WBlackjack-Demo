@@ -484,7 +484,13 @@ export default function FlashcardsGame() {
   }
 
   const currentQ = questions[currentIdx];
-  if (!currentQ) return null;
+  if (!currentQ) {
+    return (
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading session…</p>
+      </div>
+    );
+  }
 
   const totalQ = questions.length;
   const progressPct = (currentIdx / totalQ) * 100;
