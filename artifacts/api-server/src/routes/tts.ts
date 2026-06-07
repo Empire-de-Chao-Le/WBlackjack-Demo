@@ -31,9 +31,12 @@ router.post("/tts/minnan", async (req, res): Promise<void> => {
     return;
   }
 
+  // Azure does not offer a nan-TW (Hokkien) voice in all regions.
+  // Fall back to zh-TW-HsiaoYuNeural (Taiwanese Mandarin Female Neural),
+  // the closest available voice for Taiwanese Hokkien content.
   const ssml = [
-    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='nan-TW'>`,
-    `<voice name='nan-TW-A-saiNeural'>${escapeXml(text.trim())}</voice>`,
+    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-TW'>`,
+    `<voice name='zh-TW-HsiaoYuNeural'>${escapeXml(text.trim())}</voice>`,
     `</speak>`,
   ].join("");
 
