@@ -19,12 +19,21 @@ The WBlackjack user strictly requires authentic Minnan audio, NOT Mandarin, on M
   `HsiaoYu`). The old code's `nan-TW-A-saiNeural` voice was **fictional** — Azure rejected it,
   which is why production went silent.
 
-## What DOES work
-- **台灣媠聲 / ÌTHUÂN (Taiwan MOE Taiwanese TTS)**: `POST https://hapsing.ithuan.tw/bangtsam`
-  form-urlencoded `taibun=<Han text>` → returns an **MP3** stream (audio/octet-stream, ID3).
-  Authentic Kaohsiung-accent Taiwanese Hokkien. Free, no key. **Reliable for short words/phrases**
-  (flashcards' sweet spot); long sentences can return HTTP 500. This is what the api-server
-  `/tts/minnan` route now proxies. Frontend plays the MP3 blob generically (no content-type pin).
+## What DOES work — TWO-STEP pipeline (critical)
+The 媠聲 service needs **two** calls. Skipping step 1 is a silent bug, not an error.
+1. **Tokenize**: `POST https://hokbu.ithuan.tw/tau` form `taibun=<Han text>` → JSON;
+   take the `KIP` field = word-segmented **Tâi-lô romanization** (e.g. 你叫啥咪名 → "lí kiò siánn mi miâ").
+2. **Synthesize**: `POST https://hapsing.ithuan.tw/bangtsam` form `taibun=<Tâi-lô KIP>` → **MP3** (ID3).
+   Authentic Kaohsiung-accent Taiwanese Hokkien. Free, no key.
+
+**CRITICAL gotcha:** `bangtsam` expects **Tâi-lô romanization, NOT raw multi-character Han**.
+Feeding it raw Han (e.g. "你叫啥咪名") makes it mis-segment and emit only ONE truncated
+syllable (~0.6s) — the audio is real Hokkien but only the first character, so it sounds like
+a random short single sound. Single Han chars happen to work; multi-char silently truncates.
+Verified: "你叫啥咪名" raw Han → 0.684s; via tokenizer "lí kiò siánn mi miâ" → 1.584s. Always
+tokenize first. The api-server `/tts/minnan` route does both steps (falls back to raw text if the
+tokenizer is unreachable, since single chars still render). Frontend plays the MP3 blob generically.
+Keep input short; long sentences can return HTTP 500.
 
 **Why:** Spent a long investigation proving the two configured providers can't do Minnan despite
 marketing claims; only a purpose-built Taiwanese TTS produces real Hokkien.
