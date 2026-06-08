@@ -364,7 +364,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className={`shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors mb-2 ${correct ? flash ? "border-green-400 bg-green-400/10" : "border-green-400/50 bg-green-400/5" : "border-border bg-card/50"}`} data-testid="answer-area">
+      <div className="shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors border-green-400/50 bg-green-400/5 mb-[0px]" data-testid="answer-area">
         {correct
           ? <span className="text-green-400 font-medium text-2xl">{lesson.line.original}</span>
           : placed.length === 0
@@ -390,10 +390,10 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
       </div>
       <div className="shrink-0 h-8 flex px-2 mb-2 mt-6 justify-start items-center">
         {correct && (
-          <p className="text-[18px] text-left" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
+          <p className="text-[18px] text-left mt-[0px] mb-[0px]" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
         )}
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mb-3" data-testid="word-pool">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mt-[14px] mb-[14px]" data-testid="word-pool">
         {pool.map(({ word, id, used }) => (
           <button
             key={id}
