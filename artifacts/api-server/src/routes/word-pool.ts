@@ -57,9 +57,18 @@ router.get("/word-pool/stats", async (_req, res): Promise<void> => {
 
 /**
  * GET /word-pool/world
- * Returns all word pool entries across every language, excluding any entry
- * that has been individually marked as ignored in flashcard_progress.
- * Used by International Flashcards (no SRS, pure shuffle mode).
+ * Returns a language-balanced word pool for International Flashcards.
+ *
+ * Algorithm:
+ *   1. Fetch all non-ignored entries, group by language.
+ *   2. Find N = the smallest per-language count.
+ *   3. Languages with count === N → include all their entries.
+ *   4. Languages with count  >  N → include N randomly sampled entries.
+ *
+ * This ensures every language has an equal share in the session so that
+ * languages with many songs don't dominate International Flashcards.
+ * The random sample is re-drawn on every request, so different entries
+ * surface across sessions.
  */
 router.get("/word-pool/world", async (_req, res): Promise<void> => {
   const [allEntries, ignoredRows] = await Promise.all([
@@ -72,14 +81,39 @@ router.get("/word-pool/world", async (_req, res): Promise<void> => {
 
   const ignoredIds = new Set(ignoredRows.map((r) => r.wordPoolId));
 
-  const pool = allEntries
-    .filter((e) => !ignoredIds.has(e.id))
-    .map((e) => ({
-      id: e.id,
-      language: e.language,
-      phrase: e.phrase,
-      translation: e.translation,
-    }));
+  // Group non-ignored entries by language
+  const byLanguage = new Map<string, typeof allEntries>();
+  for (const e of allEntries) {
+    if (ignoredIds.has(e.id)) continue;
+    if (!byLanguage.has(e.language)) byLanguage.set(e.language, []);
+    byLanguage.get(e.language)!.push(e);
+  }
+
+  if (byLanguage.size === 0) {
+    res.json([]);
+    return;
+  }
+
+  // N = smallest language pool size
+  const n = Math.min(...[...byLanguage.values()].map((arr) => arr.length));
+
+  // Fisher-Yates shuffle helper
+  function sampleN<T>(arr: T[], count: number): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a.slice(0, count);
+  }
+
+  const pool: Array<{ id: number; language: string; phrase: string; translation: string }> = [];
+  for (const [, entries] of byLanguage) {
+    const chosen = entries.length === n ? entries : sampleN(entries, n);
+    for (const e of chosen) {
+      pool.push({ id: e.id, language: e.language, phrase: e.phrase, translation: e.translation });
+    }
+  }
 
   res.json(pool);
 });
