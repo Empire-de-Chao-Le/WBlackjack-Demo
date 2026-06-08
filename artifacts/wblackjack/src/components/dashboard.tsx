@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, Trash2, AlertTriangle } from "lucide-react";
+import { Search, X, Trash2, AlertTriangle, CircleAlert } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type SortOption =
@@ -316,7 +316,7 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                       {song.title}
                     </h3>
                     {song.hasTimestamps === false && (
-                      <span className="text-red-500 text-[20px] font-black shrink-0 leading-none" title="Not synced">!</span>
+                      <CircleAlert className="w-5 h-5 text-red-500 shrink-0 ml-2" title="Not synced" />
                     )}
                   </div>
                   <p className="truncate mt-0.5 text-[#a39daf] text-[16px] flex items-center gap-1">
