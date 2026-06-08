@@ -328,7 +328,7 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
 
               {/* Notes icon */}
               {song.notes && (
-                <div className="flex flex-col justify-start shrink-0 pt-1">
+                <div className="flex flex-col justify-between shrink-0 py-0.5">
                   <FileText className="w-5 h-5 text-muted-foreground/40" />
                 </div>
               )}
