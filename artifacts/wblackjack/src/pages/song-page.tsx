@@ -283,8 +283,8 @@ export default function SongPage() {
             <FileText className="w-4 h-4 shrink-0" />
             {hasNotes ? "Notes" : "Add notes"}
             {hasNotes && (notesOpen
-              ? <ChevronUp className="w-3 h-3 ml-auto mr-1" />
-              : <ChevronDown className="w-3 h-3 ml-auto mr-1" />
+              ? <ChevronUp className="w-3 h-3" />
+              : <ChevronDown className="w-3 h-3" />
             )}
           </button>
         </div>
