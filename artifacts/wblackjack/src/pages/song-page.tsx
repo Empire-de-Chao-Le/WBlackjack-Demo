@@ -183,12 +183,10 @@ export default function SongPage() {
           <Pencil className="w-7 h-7" />
         </button>
       </div>
-
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground" data-testid="text-song-title">{song.title}</h1>
         <p className="text-[#a39daf] text-[24px] font-bold">{song.artist}</p>
       </div>
-
       <div className="grid grid-cols-1 gap-4 mt-4">
         {needsSync ? (
           <button
@@ -334,7 +332,7 @@ export default function SongPage() {
                     <Pencil className="w-3.5 h-3.5" /> Edit
                   </button>
                 </div>
-                <div className="prose prose-sm dark:prose-invert max-w-none text-foreground leading-relaxed">
+                <div className="prose prose-sm dark:prose-invert max-w-none text-foreground text-[16px]">
                   <ReactMarkdown>{song.notes ?? ""}</ReactMarkdown>
                 </div>
               </div>
@@ -369,7 +367,6 @@ export default function SongPage() {
           </div>
         )}
       </div>
-
       <p className="text-[16px] text-[#a39daf]">
         Added {new Date(song.dateAdded).toLocaleDateString()}
         {song.lastPlayed
