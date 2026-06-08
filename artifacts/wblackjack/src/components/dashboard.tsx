@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, Trash2, AlertTriangle, CircleAlert } from "lucide-react";
+import { Search, X, Trash2, AlertTriangle, CircleAlert, FileText } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type SortOption =
@@ -325,6 +325,13 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                   </p>
                 </Link>
               </div>
+
+              {/* Notes icon */}
+              {song.notes && (
+                <div className="flex flex-col justify-start shrink-0 pt-1">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground/40" />
+                </div>
+              )}
 
               {/* Right column: indicator (top) + delete (bottom) */}
               <div className="flex flex-col justify-between items-center shrink-0 py-0.5">
