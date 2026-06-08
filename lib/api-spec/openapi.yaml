@@ -383,6 +383,10 @@ components:
           type: boolean
         hasTimestamps:
           type: boolean
+        link:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
 
     SongInput:
       type: object
@@ -412,6 +416,10 @@ components:
         lastPlayed:
           type: ["string", "null"]
           format: date-time
+        link:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
 
     SongStats:
       type: object

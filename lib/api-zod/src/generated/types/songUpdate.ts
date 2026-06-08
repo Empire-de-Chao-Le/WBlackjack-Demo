@@ -12,4 +12,8 @@ export interface SongUpdate {
   timesPlayed?: number;
   /** @nullable */
   lastPlayed?: Date | null;
+  /** @nullable */
+  link?: string | null;
+  /** @nullable */
+  notes?: string | null;
 }

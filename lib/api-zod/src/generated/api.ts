@@ -40,7 +40,9 @@ export const ListSongsResponseItem = zod.object({
   "dateAdded": zod.coerce.date(),
   "lastPlayed": zod.coerce.date().nullish(),
   "hasLyrics": zod.boolean().optional(),
-  "hasTimestamps": zod.boolean().optional()
+  "hasTimestamps": zod.boolean().optional(),
+  "link": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 export const ListSongsResponse = zod.array(ListSongsResponseItem)
 
@@ -58,8 +60,7 @@ export const CreateSongBody = zod.object({
   "artist": zod.string().min(1),
   "title": zod.string().min(1),
   "youtubeUrl": zod.string().min(1),
-  "language": zod.string().min(1),
-  "csvFilename": zod.string().optional()
+  "language": zod.string().min(1)
 })
 
 
@@ -99,7 +100,9 @@ export const GetSongResponse = zod.object({
   "dateAdded": zod.coerce.date(),
   "lastPlayed": zod.coerce.date().nullish(),
   "hasLyrics": zod.boolean().optional(),
-  "hasTimestamps": zod.boolean().optional()
+  "hasTimestamps": zod.boolean().optional(),
+  "link": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 
@@ -113,7 +116,9 @@ export const ReplaceSongParams = zod.object({
 export const ReplaceSongBody = zod.object({
   "status": zod.enum(['new', 'active', 'done']).optional(),
   "timesPlayed": zod.number().optional(),
-  "lastPlayed": zod.coerce.date().nullish()
+  "lastPlayed": zod.coerce.date().nullish(),
+  "link": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 export const ReplaceSongResponse = zod.object({
@@ -128,7 +133,9 @@ export const ReplaceSongResponse = zod.object({
   "dateAdded": zod.coerce.date(),
   "lastPlayed": zod.coerce.date().nullish(),
   "hasLyrics": zod.boolean().optional(),
-  "hasTimestamps": zod.boolean().optional()
+  "hasTimestamps": zod.boolean().optional(),
+  "link": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 
@@ -142,7 +149,9 @@ export const UpdateSongParams = zod.object({
 export const UpdateSongBody = zod.object({
   "status": zod.enum(['new', 'active', 'done']).optional(),
   "timesPlayed": zod.number().optional(),
-  "lastPlayed": zod.coerce.date().nullish()
+  "lastPlayed": zod.coerce.date().nullish(),
+  "link": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 export const UpdateSongResponse = zod.object({
@@ -157,7 +166,9 @@ export const UpdateSongResponse = zod.object({
   "dateAdded": zod.coerce.date(),
   "lastPlayed": zod.coerce.date().nullish(),
   "hasLyrics": zod.boolean().optional(),
-  "hasTimestamps": zod.boolean().optional()
+  "hasTimestamps": zod.boolean().optional(),
+  "link": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 
@@ -287,7 +298,9 @@ export const RecordPlayResponse = zod.object({
   "dateAdded": zod.coerce.date(),
   "lastPlayed": zod.coerce.date().nullish(),
   "hasLyrics": zod.boolean().optional(),
-  "hasTimestamps": zod.boolean().optional()
+  "hasTimestamps": zod.boolean().optional(),
+  "link": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 

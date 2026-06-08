@@ -22,4 +22,8 @@ export interface Song {
   lastPlayed?: Date | null;
   hasLyrics?: boolean;
   hasTimestamps?: boolean;
+  /** @nullable */
+  link?: string | null;
+  /** @nullable */
+  notes?: string | null;
 }

@@ -56,6 +56,8 @@ function buildSongResponse(
     hasTimestamps,
     csvFilename: song.csvFilename ?? null,
     vocabCsvFilename: song.vocabCsvFilename ?? null,
+    link: song.link ?? null,
+    notes: song.notes ?? null,
   };
 }
 
@@ -227,6 +229,8 @@ router.patch("/songs/:id", async (req, res): Promise<void> => {
     updates.lastPlayed = body.data.lastPlayed ? new Date(body.data.lastPlayed) : null;
   if (body.data.csvFilename !== undefined) updates.csvFilename = body.data.csvFilename;
   if (body.data.vocabCsvFilename !== undefined) updates.vocabCsvFilename = body.data.vocabCsvFilename;
+  if (body.data.link !== undefined) updates.link = body.data.link;
+  if (body.data.notes !== undefined) updates.notes = body.data.notes;
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "No updatable fields provided." });

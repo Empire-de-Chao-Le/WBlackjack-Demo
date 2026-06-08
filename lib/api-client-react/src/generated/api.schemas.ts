@@ -34,9 +34,9 @@ export interface Song {
   hasLyrics?: boolean;
   hasTimestamps?: boolean;
   /** @nullable */
-  csvFilename?: string | null;
+  link?: string | null;
   /** @nullable */
-  vocabCsvFilename?: string | null;
+  notes?: string | null;
 }
 
 export interface SongInput {
@@ -48,7 +48,6 @@ export interface SongInput {
   youtubeUrl: string;
   /** @minLength 1 */
   language: string;
-  csvFilename?: string;
 }
 
 export type SongUpdateStatus = typeof SongUpdateStatus[keyof typeof SongUpdateStatus];
@@ -65,6 +64,10 @@ export interface SongUpdate {
   timesPlayed?: number;
   /** @nullable */
   lastPlayed?: string | null;
+  /** @nullable */
+  link?: string | null;
+  /** @nullable */
+  notes?: string | null;
 }
 
 export type SongStatsByStatus = {

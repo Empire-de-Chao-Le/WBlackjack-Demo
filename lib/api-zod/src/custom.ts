@@ -10,4 +10,6 @@ export const EditSongBody = z.object({
   lastPlayed: z.string().nullable().optional(),
   csvFilename: z.string().optional(),
   vocabCsvFilename: z.string().optional(),
+  link: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
