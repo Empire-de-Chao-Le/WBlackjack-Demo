@@ -296,18 +296,16 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
           {currentIdx} / {lines.length} tapped
         </span>
       </div>
-
       {/* YouTube player — 63% width */}
       <div className="w-[63%] mx-auto bg-black rounded-xl overflow-hidden mb-4 shrink-0 shadow-xl">
         <div className="aspect-video">
           <div id="yt-sync-player" className="w-full h-full" />
         </div>
       </div>
-
       <div className="flex-1 flex flex-col justify-center px-2 space-y-3 overflow-hidden min-h-0">
         {/* Past (far) */}
         {pastLine && (
-          <p className="text-xl text-muted-foreground/50 text-center truncate">
+          <p className="text-muted-foreground/50 text-center truncate text-[22px]">
             {pastLine}
           </p>
         )}
@@ -315,7 +313,7 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
         {/* Middle — bright currently-playing line, or dots before first tap */}
         {middleLine ? (
           <p
-            className="text-xl font-bold text-foreground text-center leading-snug"
+            className="font-bold text-foreground text-center text-[22px]"
             style={{ textShadow: "0 0 24px rgba(200,150,255,0.4)" }}
           >
             {middleLine}
@@ -328,19 +326,18 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
 
         {/* Upcoming — slightly dim, this is what the next tap will stamp */}
         {upcomingLine && !isDone && (
-          <p className="text-xl text-muted-foreground/50 text-center truncate">
+          <p className="text-muted-foreground/50 text-center truncate text-[22px]">
             {upcomingLine}
           </p>
         )}
 
         {/* Far upcoming */}
         {upcoming2Line && !isDone && (
-          <p className="text-xl text-muted-foreground/35 text-center truncate">
+          <p className="text-muted-foreground/35 text-center truncate text-[22px]">
             {upcoming2Line}
           </p>
         )}
       </div>
-
       <div className="mt-4 shrink-0 space-y-3">
         {!isDone ? (
           <Button
@@ -409,7 +406,6 @@ export function SyncTool({ artist, title, youtubeUrl, language, lines, onExit, o
           </Button>
         </div>
       </div>
-
       <AlertDialog open={showExitConfirm} onOpenChange={handleExitDialogChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
