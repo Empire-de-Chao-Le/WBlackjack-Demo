@@ -316,7 +316,7 @@ export function Dashboard({ onFilteredSongsChange }: DashboardProps) {
                       {song.title}
                     </h3>
                     {song.hasTimestamps === false && (
-                      <CircleAlert className="w-5 h-5 text-red-500 shrink-0 ml-2" title="Not synced" />
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white font-black text-xs shrink-0 ml-2" title="Not synced">!</span>
                     )}
                   </div>
                   <p className="truncate mt-0.5 text-[#a39daf] text-[16px] flex items-center gap-1">
