@@ -218,19 +218,19 @@ export default function SongPage() {
 
         <div className="grid grid-cols-3 gap-3">
           <Link href={`/song/${song.id}/lyrics`} className="block">
-            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-lyrics">
+            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-lyrics">
               <ScrollText className="w-5 h-5" />
               Lyrics
             </button>
           </Link>
           <Link href={`/song/${song.id}/vocab`} className="block">
-            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-vocab">
+            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-vocab">
               <BookOpen className="w-5 h-5" />
               Vocab
             </button>
           </Link>
           <Link href={`/song/${song.id}/translation`} className="block">
-            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-translation">
+            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-translation">
               <Languages className="w-5 h-5" />
               Translation
             </button>
