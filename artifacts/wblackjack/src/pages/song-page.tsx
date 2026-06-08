@@ -218,22 +218,22 @@ export default function SongPage() {
 
         <div className="grid grid-cols-3 gap-3">
           <Link href={`/song/${song.id}/lyrics`} className="block">
-            <Button variant="outline" size="lg" className="w-full h-14 font-medium flex items-center justify-center gap-2" data-testid="btn-lyrics">
+            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-lyrics">
               <ScrollText className="w-5 h-5" />
               Lyrics
-            </Button>
+            </button>
           </Link>
           <Link href={`/song/${song.id}/vocab`} className="block">
-            <Button variant="outline" size="lg" className="w-full h-14 font-medium flex items-center justify-center gap-2" data-testid="btn-vocab">
+            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-vocab">
               <BookOpen className="w-5 h-5" />
               Vocab
-            </Button>
+            </button>
           </Link>
           <Link href={`/song/${song.id}/translation`} className="block">
-            <Button variant="outline" size="lg" className="w-full h-14 font-medium flex items-center justify-center gap-2" data-testid="btn-translation">
+            <button className="w-full h-14 rounded-lg border border-border font-medium flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-[#8c3cdd]/10 hover:text-[#8c3cdd] hover:border-[#8c3cdd]/40 transition-colors" data-testid="btn-translation">
               <Languages className="w-5 h-5" />
               Translation
-            </Button>
+            </button>
           </Link>
         </div>
 
@@ -247,7 +247,7 @@ export default function SongPage() {
                 className={`flex-1 h-14 rounded-lg border font-medium flex items-center justify-center gap-2 transition-colors text-sm
                   ${hasLink
                     ? "border-[#8c3cdd] text-[#8c3cdd] hover:bg-[#8c3cdd]/10"
-                    : "border-border text-muted-foreground hover:bg-accent"
+                    : "border-border text-muted-foreground hover:bg-[#8c3cdd]/8 hover:border-[#8c3cdd]/30"
                   }`}
                 data-testid="btn-link"
               >
@@ -259,7 +259,7 @@ export default function SongPage() {
               {hasLink && (
                 <button
                   onClick={() => { setLinkDraft(song.link ?? ""); setPanel("link-edit"); }}
-                  className="h-14 w-10 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-accent transition-colors shrink-0"
+                  className="h-14 w-10 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-[#8c3cdd]/8 hover:border-[#8c3cdd]/30 transition-colors shrink-0"
                   aria-label="Edit link"
                 >
                   <Pencil className="w-4 h-4" />
@@ -274,7 +274,7 @@ export default function SongPage() {
             className={`h-14 rounded-lg border font-medium flex items-center justify-center gap-2 transition-colors text-sm
               ${hasNotes
                 ? "border-[#8c3cdd] text-[#8c3cdd] hover:bg-[#8c3cdd]/10"
-                : "border-border text-muted-foreground hover:bg-accent"
+                : "border-border text-muted-foreground hover:bg-[#8c3cdd]/8 hover:border-[#8c3cdd]/30"
               }`}
             data-testid="btn-notes"
           >
