@@ -119,6 +119,48 @@ router.get("/word-pool/world", async (_req, res): Promise<void> => {
 });
 
 /**
+ * POST /word-pool/delete-entries
+ * Permanently deletes a specific set of word pool entries by id.
+ *   1. Deletes any flashcard_progress rows tied to those entries.
+ *   2. Deletes the word_pool entries themselves.
+ * Song-specific exercises are unaffected (they read CSV data, not the pool).
+ * Body: { ids: number[] }
+ */
+router.post("/word-pool/delete-entries", async (req, res): Promise<void> => {
+  const { ids } = (req.body ?? {}) as { ids?: unknown };
+  if (!Array.isArray(ids)) {
+    res.status(400).json({ error: "ids must be an array" });
+    return;
+  }
+
+  const numericIds = Array.from(
+    new Set(
+      ids.filter(
+        (x): x is number => typeof x === "number" && Number.isInteger(x)
+      )
+    )
+  );
+
+  if (numericIds.length === 0) {
+    res.status(400).json({ error: "ids must contain at least one valid id" });
+    return;
+  }
+
+  const deleted = await db.transaction(async (tx) => {
+    await tx
+      .delete(flashcardProgressTable)
+      .where(inArray(flashcardProgressTable.wordPoolId, numericIds));
+
+    return tx
+      .delete(wordPoolTable)
+      .where(inArray(wordPoolTable.id, numericIds))
+      .returning({ id: wordPoolTable.id });
+  });
+
+  res.json({ deletedEntries: deleted.length });
+});
+
+/**
  * DELETE /word-pool/:language
  * Wipes every trace of a language from the word pool:
  *   1. Deletes all flashcard_progress rows tied to word_pool entries of this language.
