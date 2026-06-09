@@ -174,8 +174,7 @@ export default function InternationalFlashcards() {
     }
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
-        <span className="text-7xl" style={{ display: "inline-block", animation: "spin 1.5s linear infinite" }}>🌍</span>
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <span className="text-7xl animate-spin-slow">🌀</span>
       </div>
     );
   }
