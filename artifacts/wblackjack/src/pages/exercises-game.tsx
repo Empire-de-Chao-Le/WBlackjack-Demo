@@ -364,29 +364,38 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="shrink-0 min-h-20 border-2 rounded-xl p-4 flex flex-wrap gap-2 items-center transition-colors border-green-400/50 bg-green-400/5 mb-[0px]" data-testid="answer-area">
-        {correct
-          ? <span className="text-green-400 font-medium text-2xl">{lesson.line.original}</span>
-          : placed.length === 0
-            ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
-            : displayItems.map(({ word, origIdx, isGhost }, displayIdx) => (
-                <button
-                  key={isGhost ? "ghost" : `item-${origIdx}`}
-                  ref={(el) => { placedRefs.current[displayIdx] = el; }}
-                  onPointerDown={(e) => !isGhost && handlePlacedPointerDown(e, origIdx)}
-                  onPointerMove={handlePlacedPointerMove}
-                  onPointerUp={handlePlacedPointerUp}
-                  className={`px-4 py-2 rounded-lg border font-medium text-[20px] touch-none select-none transition-colors
-                    ${isGhost
-                      ? "border-2 border-dashed border-primary/50 bg-primary/10 text-primary/60 cursor-grabbing"
-                      : "bg-primary/20 border-primary/40 text-white hover:bg-primary/30 cursor-grab"
-                    }`}
-                  data-testid={`placed-word-${displayIdx}`}
-                >
-                  {word}
-                </button>
-              ))
-        }
+      <div className="shrink-0 border-2 rounded-xl transition-colors border-green-400/50 bg-green-400/5 mb-[0px] relative" data-testid="answer-area">
+        {/* Invisible height-setter: always renders the full answer so the box never shifts */}
+        <div className="invisible pointer-events-none p-4 flex flex-wrap gap-2 items-center" aria-hidden="true">
+          {targetWords.map((w, i) => (
+            <span key={i} className="px-4 py-2 rounded-lg border border-transparent font-medium text-[20px]">{w}</span>
+          ))}
+        </div>
+        {/* Real interactive content overlaid */}
+        <div className="absolute inset-0 p-4 flex flex-wrap gap-2 items-center">
+          {correct
+            ? <span className="text-green-400 font-medium text-2xl">{lesson.line.original}</span>
+            : placed.length === 0
+              ? <span className="text-muted-foreground/40 text-base">Click words below to place them here</span>
+              : displayItems.map(({ word, origIdx, isGhost }, displayIdx) => (
+                  <button
+                    key={isGhost ? "ghost" : `item-${origIdx}`}
+                    ref={(el) => { placedRefs.current[displayIdx] = el; }}
+                    onPointerDown={(e) => !isGhost && handlePlacedPointerDown(e, origIdx)}
+                    onPointerMove={handlePlacedPointerMove}
+                    onPointerUp={handlePlacedPointerUp}
+                    className={`px-4 py-2 rounded-lg border font-medium text-[20px] touch-none select-none transition-colors
+                      ${isGhost
+                        ? "border-2 border-dashed border-primary/50 bg-primary/10 text-primary/60 cursor-grabbing"
+                        : "bg-primary/20 border-primary/40 text-white hover:bg-primary/30 cursor-grab"
+                      }`}
+                    data-testid={`placed-word-${displayIdx}`}
+                  >
+                    {word}
+                  </button>
+                ))
+          }
+        </div>
       </div>
       <div className="shrink-0 h-8 flex px-2 mb-2 mt-6 justify-start items-center">
         {correct && (
