@@ -106,7 +106,7 @@ function SelectedWordsPreview({ words }: { words: string[] }) {
   return (
     <p
       ref={ref}
-      className="text-xs text-muted-foreground leading-snug break-words min-h-[2.25rem]"
+      className="text-xs text-muted-foreground leading-snug break-words"
     >
       {buildText(shownCount)}
     </p>
