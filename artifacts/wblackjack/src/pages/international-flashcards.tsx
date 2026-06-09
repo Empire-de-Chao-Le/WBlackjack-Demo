@@ -84,8 +84,15 @@ export default function InternationalFlashcards() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Build the session exactly once per component mount — whichever pool data
+  // arrives first (cached or fresh). Subsequent background refetches are
+  // ignored so stale-while-revalidate can't swap out a question mid-session.
+  const sessionBuilt = useRef(false);
+
   useEffect(() => {
+    if (sessionBuilt.current) return;
     if (pool && pool.length >= 4) {
+      sessionBuilt.current = true;
       setQuestions(buildSession(pool));
       setCurrentIdx(0);
       setSelectedOption(null);
@@ -145,10 +152,30 @@ export default function InternationalFlashcards() {
   }, [selectedOption, currentIdx]);
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (isLoading) {
+
+  // Show the spinning world whenever the session isn't ready yet:
+  //   • first-ever load (fetching from network, no cache)
+  //   • second+ load (cache returned but the session-build effect hasn't
+  //     fired yet — one React frame; avoids a blank flash)
+  // Exception: if the pool is loaded and genuinely too small, show the
+  // error message instead of spinning forever.
+  if (questions.length === 0) {
+    if (!isLoading && pool !== undefined && pool.length < 4) {
+      return (
+        <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-4 p-6">
+          <p className="text-muted-foreground text-center">
+            Not enough words across all languages yet (need at least 4).
+          </p>
+          <button onClick={goBack} className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors">
+            <ArrowLeft className="w-7 h-7" />
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+        <span className="text-7xl" style={{ display: "inline-block", animation: "spin 1.5s linear infinite" }}>🌍</span>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
