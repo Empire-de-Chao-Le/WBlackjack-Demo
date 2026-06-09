@@ -442,7 +442,7 @@ export default function FlashcardsGame() {
   if (isLoading) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+        <span className="text-7xl animate-spin-slow">🌀</span>
       </div>
     );
   }
@@ -487,7 +487,7 @@ export default function FlashcardsGame() {
   if (!currentQ) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading session…</p>
+        <span className="text-7xl animate-spin-slow">🌀</span>
       </div>
     );
   }
