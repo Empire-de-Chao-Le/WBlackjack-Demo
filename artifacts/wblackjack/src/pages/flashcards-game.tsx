@@ -108,7 +108,7 @@ async function speakMinnan(text: string, gen: number): Promise<void> {
     await audio.play();
   } catch (e) {
     // eslint-disable-next-line no-console
-    console.error("[TTS] Minnan Azure TTS error:", e);
+    console.error("[TTS] Minnan ithuan TTS error:", e);
   }
 }
 
@@ -117,7 +117,7 @@ function speak(text: string, langName: string) {
   // Stop any currently-playing Minnan audio before starting a new utterance.
   if (_currentMinnanAudio) { _currentMinnanAudio.pause(); _currentMinnanAudio = null; }
   const gen = ++_speakGen;
-  // Minnan (Taiwanese Hokkien) — no browser voice exists; route to Azure TTS.
+  // Minnan (Taiwanese Hokkien) — no browser voice exists; route to ithuan TTS.
   if (MINNAN_NAMES.has(langName.toLowerCase().trim())) {
     speakMinnan(text, gen);
     return;
