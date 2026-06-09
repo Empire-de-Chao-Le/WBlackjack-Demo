@@ -70,6 +70,10 @@ export default function InternationalFlashcards() {
       if (!res.ok) throw new Error("Failed to load world pool");
       return res.json() as Promise<PoolEntry[]>;
     },
+    // Each session must be a fresh random sample from the server. gcTime:0
+    // drops the cache the moment the page unmounts, so the next session always
+    // cold-fetches a new shuffle instead of replaying the cached one.
+    gcTime: 0,
   });
 
   const [questions, setQuestions] = useState<Question[]>([]);

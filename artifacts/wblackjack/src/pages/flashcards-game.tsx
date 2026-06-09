@@ -251,6 +251,10 @@ export default function FlashcardsGame() {
       return res.json() as Promise<PoolEntry[]>;
     },
     enabled: !!language,
+    // Drop the cache on unmount so every new session cold-fetches. Combined with
+    // the due query below, this guarantees each session reflects the latest SRS
+    // state rather than replaying the previous session's cached cards.
+    gcTime: 0,
   });
 
   // SRS session: which cards are due today (plus new cards), in study order.
@@ -270,6 +274,11 @@ export default function FlashcardsGame() {
       }>;
     },
     enabled: !!language,
+    // CRITICAL: this is the per-session due set. gcTime:0 forces a cold fetch on
+    // every mount so cards reviewed in the previous session (now pushed to a
+    // future due date) are excluded — the same card never appears in two
+    // consecutive sessions, and no stale cardIds get replayed from cache.
+    gcTime: 0,
   });
 
   const isLoading = poolLoading || sessionLoading;
