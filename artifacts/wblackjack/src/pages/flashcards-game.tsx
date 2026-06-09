@@ -314,8 +314,15 @@ export default function FlashcardsGame() {
   const ignoredSet = new Set(session?.ignoredIds ?? []);
   const distractorPool = pool ? pool.filter((e) => !ignoredSet.has(e.id)) : [];
 
+  // Build the session exactly once per component mount — whichever cached or
+  // fresh data arrives first. Background refetches are ignored so stale-while-
+  // revalidate can't swap out a question that's already on screen.
+  const sessionBuilt = useRef(false);
+
   useEffect(() => {
+    if (sessionBuilt.current) return;
     if (pool && pool.length >= 4 && session) {
+      sessionBuilt.current = true;
       const ignored = new Set(session.ignoredIds ?? []);
       const dPool = pool.filter((e) => !ignored.has(e.id));
       setQuestions(buildSessionFromIds(session.cardIds, dPool));
