@@ -68,22 +68,22 @@ export default function KaraokePicker() {
                 {difficulty}%
               </span>
 
-              {/* Reward stack — fixed right column, top=perfect, mid=high, bot=normal */}
-              <div className="absolute right-3 top-0 bottom-0 flex flex-col items-end justify-around py-2 pointer-events-none">
+              {/* Reward stack — 3 fixed equal-height slots, top=perfect, mid=high, bot=normal */}
+              <div className="absolute right-3 top-0 bottom-0 flex flex-col pointer-events-none">
                 {TIER_STACK.map((tier) => {
                   const count = countFor(difficulty, tier);
                   return (
-                    <span
+                    <div
                       key={tier}
-                      className="flex items-center gap-0.5 text-sm font-bold leading-none"
+                      className="flex-1 flex items-center justify-end"
                     >
                       {count > 0 ? (
-                        <>
+                        <span className="flex items-center gap-0.5 text-sm font-bold leading-none">
                           <span>{count}</span>
                           <RewardSpiral tier={tier} className="text-xl" />
-                        </>
+                        </span>
                       ) : null}
-                    </span>
+                    </div>
                   );
                 })}
               </div>
