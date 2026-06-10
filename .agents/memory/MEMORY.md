@@ -1,2 +1,3 @@
 - [DashScope Qwen3-TTS endpoint](qwen3-tts-endpoint.md) — correct endpoint is multimodal-generation/generation; voice inside input, NOT top-level
 - [Minnan/Hokkien TTS providers](minnan-tts-providers.md) — Qwen3-TTS & Azure CANNOT do real Minnan; use 台灣媠聲 ithuan (hapsing.ithuan.tw) instead.
+- [YT IFrame + React unmount](yt-iframe-react-unmount.md) — YT.Player replaces its target node; mount it on an imperative child of a ref wrapper or unmount throws removeChild.

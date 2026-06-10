@@ -179,6 +179,15 @@ export default function KaraokeGame() {
   const recordPlay = useRecordPlay();
 
   const playerRef = useRef<YTPlayer | null>(null);
+  /**
+   * React-managed wrapper for the YouTube iframe. The YT API REPLACES its
+   * target node with an iframe, so we never let React render that target
+   * directly — instead we append an imperative child here that React doesn't
+   * track. That way unmounting (finish screen / back navigation) removes this
+   * wrapper natively without React trying to reconcile the YT-replaced node,
+   * which previously threw "Node.removeChild: node is not a child of this node".
+   */
+  const playerContainerRef = useRef<HTMLDivElement>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fadeGraceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lineTrackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -241,12 +250,19 @@ export default function KaraokeGame() {
   const initPlayer = useCallback(() => {
     if (!song || !window.YT?.Player) return;
     if (playerRef.current) return; // already initialised
-    const el = document.getElementById("yt-karaoke-player");
-    if (!el) {
-      // DOM element not yet mounted — retry on next tick (cancellable).
+    const container = playerContainerRef.current;
+    if (!container) {
+      // Wrapper not yet mounted — retry on next tick (cancellable).
       initRetryRef.current = setTimeout(initPlayer, 100);
       return;
     }
+    // Create an imperative target that React does not track. The YT API
+    // replaces this node with an iframe; React only ever sees the wrapper.
+    container.innerHTML = "";
+    const target = document.createElement("div");
+    target.id = "yt-karaoke-player";
+    target.className = "w-full h-full";
+    container.appendChild(target);
     playerRef.current = new window.YT.Player("yt-karaoke-player", {
       videoId: extractVideoId(song.youtubeUrl),
       playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
@@ -276,6 +292,12 @@ export default function KaraokeGame() {
       if (lineTrackIntervalRef.current) clearInterval(lineTrackIntervalRef.current);
       if (fadeGraceRef.current) clearTimeout(fadeGraceRef.current);
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+      try {
+        playerRef.current?.destroy?.();
+      } catch {
+        /* iframe may already be gone */
+      }
+      playerRef.current = null;
     };
   }, [song, initPlayer]);
 
@@ -585,7 +607,7 @@ export default function KaraokeGame() {
       </div>
       {/* ── YouTube player — compact ─────────────────────────────────────── */}
       <div className="shrink-0 bg-black relative w-full" style={{ height: "min(36vw, 162px)" }}>
-        <div id="yt-karaoke-player" className="w-full h-full" />
+        <div ref={playerContainerRef} className="w-full h-full" />
         {!playerReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-black text-muted-foreground text-sm">
             Loading player...
