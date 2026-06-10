@@ -666,8 +666,7 @@ export const uploadLyricsCsv = async (id: number,
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'text/csv', ...options?.headers },
-    body: JSON.stringify(
-      uploadLyricsCsvBody,)
+    body: uploadLyricsCsvBody,
   }
 );}
 
