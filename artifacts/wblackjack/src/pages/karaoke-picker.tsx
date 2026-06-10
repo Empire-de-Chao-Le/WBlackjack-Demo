@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useGetSongLyrics } from "@workspace/api-client-react";
 import { tokenize } from "@/lib/helpers";
-import { RewardSpiral, TIER_ORDER, type KaraokeTier } from "@/components/reward-spiral";
+import { RewardSpiral, type KaraokeTier } from "@/components/reward-spiral";
 
 type KaraokeResultRow = { difficulty: number; tier: KaraokeTier; count: number };
 
 const DIFFICULTIES = [10, 33, 100] as const;
+
+const TIER_STACK: KaraokeTier[] = ["perfect", "high", "normal"];
 
 export default function KaraokePicker() {
   const [, params] = useRoute("/song/:id/karaoke");
@@ -36,14 +38,8 @@ export default function KaraokePicker() {
     ? lyrics.reduce((sum, l) => sum + tokenize(l.original).length, 0)
     : null;
 
-  // Index counts by `${difficulty}-${tier}` for quick lookup per button.
   const countFor = (difficulty: number, tier: KaraokeTier): number =>
     results?.find((r) => r.difficulty === difficulty && r.tier === tier)?.count ?? 0;
-
-  const badgesFor = (difficulty: number) =>
-    TIER_ORDER.map((tier) => ({ tier, count: countFor(difficulty, tier) })).filter(
-      (b) => b.count > 0
-    );
 
   return (
     <div className="min-h-[100dvh] flex flex-col p-4 max-w-lg mx-auto w-full gap-8">
@@ -60,30 +56,40 @@ export default function KaraokePicker() {
       </div>
 
       <div className="flex flex-col gap-4 mt-8">
-        {DIFFICULTIES.map((difficulty) => {
-          const badges = badgesFor(difficulty);
-          return (
-            <Link key={difficulty} href={`/song/${id}/karaoke/${difficulty}`} className="block">
-              <Button
-                size="lg"
-                className="w-full h-24 text-2xl font-bold hover:bg-muted border border-border bg-[#8c3cdde6] flex flex-col items-center justify-center gap-1.5"
-                data-testid={`btn-diff-${difficulty}`}
-              >
-                <span>{difficulty}%</span>
-                {badges.length > 0 && (
-                  <div className="flex items-center gap-4">
-                    {badges.map((b) => (
-                      <span key={b.tier} className="flex items-center gap-1 text-base">
-                        <RewardSpiral tier={b.tier} className="text-2xl" />
-                        <span className="font-bold">x{b.count}</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </Button>
-            </Link>
-          );
-        })}
+        {DIFFICULTIES.map((difficulty) => (
+          <Link key={difficulty} href={`/song/${id}/karaoke/${difficulty}`} className="block">
+            <Button
+              size="lg"
+              className="w-full h-24 text-2xl font-bold hover:bg-muted border border-border bg-[#8c3cdde6] relative"
+              data-testid={`btn-diff-${difficulty}`}
+            >
+              {/* Percentage — always centred */}
+              <span className="absolute inset-0 flex items-center justify-center">
+                {difficulty}%
+              </span>
+
+              {/* Reward stack — fixed right column, top=perfect, mid=high, bot=normal */}
+              <div className="absolute right-3 top-0 bottom-0 flex flex-col items-end justify-around py-2 pointer-events-none">
+                {TIER_STACK.map((tier) => {
+                  const count = countFor(difficulty, tier);
+                  return (
+                    <span
+                      key={tier}
+                      className="flex items-center gap-0.5 text-sm font-bold leading-none"
+                    >
+                      {count > 0 ? (
+                        <>
+                          <span>{count}</span>
+                          <RewardSpiral tier={tier} className="text-xl" />
+                        </>
+                      ) : null}
+                    </span>
+                  );
+                })}
+              </div>
+            </Button>
+          </Link>
+        ))}
       </div>
     </div>
   );
