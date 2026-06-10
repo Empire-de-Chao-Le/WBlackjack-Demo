@@ -556,14 +556,14 @@ export default function KaraokeGame() {
           <p className="text-muted-foreground">{msg.subtitle}</p>
         </div>
         <div className="flex gap-6 text-sm font-bold">
+          <span className="text-muted-foreground">
+            Gaps <span className="text-foreground">{gaps.length}</span>
+          </span>
           <span>
             Hits <span className="text-green-400">{hits}</span>
           </span>
           <span>
             Fails <span className="text-pink-400">{fails}</span>
-          </span>
-          <span className="text-muted-foreground">
-            Gaps <span className="text-foreground">{gaps.length}</span>
           </span>
         </div>
         <button
