@@ -18,6 +18,25 @@ import { ArrowLeft, ChevronsRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { tokenize } from "@/lib/helpers";
+import { RewardSpiral, type KaraokeTier } from "@/components/reward-spiral";
+
+/**
+ * Result tier from the share of failed taps over total gaps:
+ *   perfect → zero fails
+ *   high    → some fails, but strictly under 10% of gaps
+ *   normal  → 10% or more fails (still a completed game)
+ */
+function computeTier(fails: number, totalGaps: number): KaraokeTier {
+  if (fails === 0) return "perfect";
+  if (totalGaps > 0 && (fails / totalGaps) * 100 < 10) return "high";
+  return "normal";
+}
+
+const TIER_MESSAGE: Record<KaraokeTier, { title: string; subtitle: string }> = {
+  perfect: { title: "Perfect!", subtitle: "Flawless run — not a single miss." },
+  high: { title: "Great job!", subtitle: "Nearly spotless." },
+  normal: { title: "Well done!", subtitle: "Session complete." },
+};
 
 type YTPlayer = {
   getCurrentTime: () => number;
@@ -185,6 +204,9 @@ export default function KaraokeGame() {
   const [fails, setFails] = useState(0);
   /** lineIndex (data-model) of the line that caused a pause; null when not paused */
   const [pausedLineIndex, setPausedLineIndex] = useState<number | null>(null);
+  /** Set once the player taps FINISH — drives the results screen. */
+  const [finished, setFinished] = useState(false);
+  const [resultTier, setResultTier] = useState<KaraokeTier | null>(null);
 
   const gaps = useMemo(() => {
     if (!lyrics) return [];
@@ -464,9 +486,28 @@ export default function KaraokeGame() {
   const handleFinish = async () => {
     if (lineTrackIntervalRef.current) clearInterval(lineTrackIntervalRef.current);
     if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-    await recordPlay.mutateAsync({ id });
+    if (fadeGraceRef.current) clearTimeout(fadeGraceRef.current);
+    try { playerRef.current?.pauseVideo(); } catch { /* player may be gone */ }
+
+    const tier = computeTier(fails, gaps.length);
+    setResultTier(tier);
+    setFinished(true);
+
+    try {
+      await recordPlay.mutateAsync({ id });
+      const res = await fetch("/api/karaoke/result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ songId: id, difficulty, tier }),
+      });
+      if (!res.ok) {
+        throw new Error(`karaoke result POST failed: ${res.status}`);
+      }
+    } catch (err) {
+      console.error("Failed to record karaoke result", err);
+    }
     queryClient.invalidateQueries({ queryKey: getGetSongQueryKey(id) });
-    setLocation(`/song/${id}`);
+    queryClient.invalidateQueries({ queryKey: ["karaoke-results", id] });
   };
 
   if (songLoading || lyricsLoading)
@@ -481,6 +522,38 @@ export default function KaraokeGame() {
         Song not found
       </div>
     );
+
+  // ── Results screen (shown after FINISH, never on back-button exit) ──────────
+  if (finished && resultTier) {
+    const msg = TIER_MESSAGE[resultTier];
+    return (
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-6 p-6 text-foreground text-center">
+        <RewardSpiral tier={resultTier} spin className="text-8xl" />
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold">{msg.title}</h2>
+          <p className="text-muted-foreground">{msg.subtitle}</p>
+        </div>
+        <div className="flex gap-6 text-sm font-bold">
+          <span>
+            Hits <span className="text-green-400">{hits}</span>
+          </span>
+          <span>
+            Fails <span className="text-pink-400">{fails}</span>
+          </span>
+          <span className="text-muted-foreground">
+            Gaps <span className="text-foreground">{gaps.length}</span>
+          </span>
+        </div>
+        <button
+          onClick={() => setLocation(`/song/${id}`)}
+          className="mt-2 px-8 py-4 rounded-2xl bg-[#8c3cdd] text-white font-bold text-lg hover:bg-[#7b2fcc] active:scale-95 transition-all"
+          data-testid="btn-back-to-song"
+        >
+          Back to song
+        </button>
+      </div>
+    );
+  }
 
   const gapsFilled =
     filledGaps.size -

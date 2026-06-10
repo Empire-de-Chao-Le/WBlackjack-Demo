@@ -1,0 +1,23 @@
+Let's add results recording for Karaoke. 
+Results are recorded when I finish the game by clicking the "Finish" button (exiting via the "back" button does NOT count).
+
+The results are of three tiers: 
+(1) normal - finished the game with more than 10% fails (calculated as the percent of Fails from total number of Gaps). 
+(2) high - finished the game with some fails, but less than 10% fails. 
+(3) perfect - finished the game with zero fails. 
+That is, every time I finish a game without exiting it in the midway, it will be recorded as some result, even is it's very poor, it's still the tier (1). 
+
+First, add the results page. After I tap "Finish" at the eng of Karaoke game, ther should be a page showing a result congradulatory message, the reward: 
+- purple colour 🌀 (rotating) for normal tier;
+- bright pink colour 🌀 (rotating) for high tier;
+- bright yellow 🌀 (rotating) for perfect tier. 
+and the button "back to song". when "back to song" is clicked, it takes be back to Song Page, as before. 
+
+The results must be recorded by the app and displayed on the Karaoke difficulty choice buttons for that specific song. 
+
+Add the rewards display. 
+After I played Karaoke game of a song and the result was recorded, next time when I open Karaoke of this song, and see the difficulty choice buttons, the spirals (static) are there, on the respective buttons in their respective colours, with "xN" next to the spirals, where N is the number of times this tier rewars was earned for this difficulty level. 
+Example: if I played "10%" difficulty one time with no fails; "33%" difficulty three times, one of which with one fail (less than 10% of the Gaps in the "33%" difficulty game) and two with no fails; 100% difficulty one time with half fails - then the displayed spirals are: only yellow on "10%" difficulty button with "x1" next to it; one pink with "x1" and one yellow with "x2" on the "33%" difficulty button; one purple with "x1" on the "100%" difficulty button. 
+if I haven't finished any games with a particular difficulty level for this song, there are no spirals on that button, just the difficulty level displayed, as it is now. 
+
+The counter for how many times a song has been played (combining Karaoke and Exercises), the Song Page, the Indicator on the Song Card, all other behaviour and layouts remain unchanged. 

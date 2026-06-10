@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, desc, asc, sql, inArray } from "drizzle-orm";
-import { db, songsTable, lyricsTable, timestampsTable, vocabTable } from "@workspace/db";
+import { db, songsTable, lyricsTable, timestampsTable, vocabTable, karaokeResultsTable } from "@workspace/db";
 import {
   ListSongsQueryParams,
   CreateSongBody,
@@ -325,6 +325,7 @@ router.delete("/songs/:id", async (req, res): Promise<void> => {
   await db.delete(vocabTable).where(eq(vocabTable.songId, params.data.id));
   await db.delete(lyricsTable).where(eq(lyricsTable.songId, params.data.id));
   await db.delete(timestampsTable).where(eq(timestampsTable.songId, params.data.id));
+  await db.delete(karaokeResultsTable).where(eq(karaokeResultsTable.songId, params.data.id));
   const [song] = await db
     .delete(songsTable)
     .where(eq(songsTable.id, params.data.id))
