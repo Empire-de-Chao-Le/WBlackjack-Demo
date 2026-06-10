@@ -492,13 +492,14 @@ export default function KaraokeGame() {
     [currentGapIdx, gaps, filledGaps, gapStackMap]
   );
 
-  // Keyboard shortcuts: 1–4 fire the corresponding dock slot.
+  // Keyboard shortcuts: 1–4 and u/i/o/p fire the corresponding dock slot.
   useEffect(() => {
+    const KEY_TO_IDX: Record<string, number> = { "1": 0, "2": 1, "3": 2, "4": 3, u: 0, i: 1, o: 2, p: 3 };
     const handler = (e: KeyboardEvent) => {
-      const n = parseInt(e.key);
-      if (n >= 1 && n <= 4) {
+      const idx = KEY_TO_IDX[e.key];
+      if (idx !== undefined) {
         const dock = stacks.map((s) => s[0] ?? "***");
-        handleSlotClick(dock[n - 1], n - 1);
+        handleSlotClick(dock[idx], idx);
       }
     };
     window.addEventListener("keydown", handler);
