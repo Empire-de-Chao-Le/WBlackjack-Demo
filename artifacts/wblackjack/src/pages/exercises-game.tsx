@@ -398,9 +398,7 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
         </div>
       </div>
       <div className="shrink-0 h-8 flex px-2 mb-2 mt-6 justify-start items-center">
-        {correct && (
-          <p className="text-[18px] text-left mt-[0px] mb-[0px]" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
-        )}
+        <p className="text-[18px] text-left mt-[0px] mb-[0px]" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mt-[14px] mb-[14px]" data-testid="word-pool">
         {pool.map(({ word, id, used }) => (
