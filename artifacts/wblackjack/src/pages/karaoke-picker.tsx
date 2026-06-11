@@ -78,7 +78,7 @@ export default function KaraokePicker() {
                     style={{
                       width: 18,
                       height: 18,
-                      background: filled ? "#2d0a5e" : "rgba(255,255,255,0.22)",
+                      background: filled ? "#2d0a5e" : "rgba(255,255,255,0.78)",
                     }}
                   />
                 ))}
