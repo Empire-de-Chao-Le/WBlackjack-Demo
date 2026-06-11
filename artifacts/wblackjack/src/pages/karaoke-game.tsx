@@ -100,8 +100,8 @@ function buildGaps(lyrics: LyricLine[], difficulty: number): Gap[] {
     }));
   }
 
-  // For 10 % use an interval of 8–12 words; for 33 % use 2–4 words.
-  const [minGap, maxGap] = difficulty === 33 ? [2, 4] : [8, 12];
+  // For 10 % use a step of 8–12; for 33 % use a step of 3–5 (= 2–4 visible words between blanks).
+  const [minGap, maxGap] = difficulty === 33 ? [3, 5] : [8, 12];
 
   const gaps: Gap[] = [];
   // Start at a random offset inside the first interval so the first blank
