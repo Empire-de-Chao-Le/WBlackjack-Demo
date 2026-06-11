@@ -191,7 +191,7 @@ export default function SongPage() {
         {needsSync ? (
           <button
             onClick={() => setIsSyncing(true)}
-            className="w-full h-24 text-[22px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg rounded-lg flex items-center justify-center gap-3 relative"
+            className="w-full h-24 text-[22px] bg-primary hover:bg-muted text-primary-foreground font-bold shadow-lg rounded-lg flex items-center justify-center gap-3 relative"
             data-testid="btn-karaoke"
           >
             <Mic className="w-[28px] h-[28px]" />
@@ -202,7 +202,7 @@ export default function SongPage() {
           </button>
         ) : (
           <Link href={`/song/${song.id}/karaoke`} className="block">
-            <Button size="lg" className="w-full h-24 text-[22px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-karaoke">
+            <Button size="lg" className="w-full h-24 text-[22px] bg-primary hover:bg-muted text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-karaoke">
               <Mic className="w-[28px] h-[28px]" />
               Karaoke
             </Button>
@@ -210,7 +210,7 @@ export default function SongPage() {
         )}
 
         <Link href={`/song/${song.id}/exercises`} className="block">
-          <Button size="lg" className="w-full h-24 text-[22px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-exercises">
+          <Button size="lg" className="w-full h-24 text-[22px] bg-primary hover:bg-muted text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-exercises">
             <Brain className="w-[28px] h-[28px]" />
             Exercises
           </Button>
