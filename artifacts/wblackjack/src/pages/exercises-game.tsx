@@ -458,9 +458,7 @@ function LessonTypeB({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
         {lesson.options.map((opt, i) => {
           const isCorrectSelected = opt === lesson.line.translation && selected === opt;
           const isWrong = wrongFlash === opt;
-          return (
-            <button key={i} onClick={() => handleSelect(opt)} className={`w-full min-h-14 px-5 py-3 rounded-xl border-2 text-left text-base font-medium transition-all ${isCorrectSelected ? "border-green-400 bg-green-400/10 text-green-300" : isWrong ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95" : "border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground"}`} data-testid={`btn-option-${i}`}>{opt}</button>
-          );
+          return (<button key={i} onClick={() => handleSelect(opt)} className="w-full min-h-14 px-5 py-3 rounded-xl border-2 text-left font-medium transition-all border-border bg-card hover:border-primary/50 hover:bg-muted text-foreground text-[20px]" data-testid={`btn-option-${i}`}>{opt}</button>);
         })}
       </div>
       <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!correct} data-testid="btn-continue">
