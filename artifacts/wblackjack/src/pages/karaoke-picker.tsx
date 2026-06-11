@@ -13,6 +13,12 @@ const DIFFICULTIES = [10, 33, 100] as const;
 
 const TIER_STACK: KaraokeTier[] = ["perfect", "high", "normal"];
 
+const DIFFICULTY_LABEL: Record<number, string> = {
+  10:  "⚪⚪⚪⚪⚪🟣⚪",
+  33:  "⚪⚪🟣⚪⚪⚪🟣",
+  100: "🟣🟣🟣🟣🟣🟣🟣",
+};
+
 export default function KaraokePicker() {
   const [, params] = useRoute("/song/:id/karaoke");
   const [, setLocation] = useLocation();
@@ -63,9 +69,9 @@ export default function KaraokePicker() {
               className="w-full h-24 text-2xl font-bold hover:bg-muted border border-border bg-[#8c3cdde6] relative"
               data-testid={`btn-diff-${difficulty}`}
             >
-              {/* Percentage — always centred */}
-              <span className="absolute inset-0 flex items-center justify-center">
-                {difficulty}%
+              {/* Difficulty label — always centred */}
+              <span className="absolute inset-0 flex items-center justify-center tracking-wide">
+                {DIFFICULTY_LABEL[difficulty]}
               </span>
 
               {/* Reward stack — 3 fixed equal-height slots, top=perfect, mid=high, bot=normal */}
