@@ -191,10 +191,10 @@ export default function SongPage() {
         {needsSync ? (
           <button
             onClick={() => setIsSyncing(true)}
-            className="w-full h-24 text-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg rounded-lg flex items-center justify-center gap-3 relative"
+            className="w-full h-24 text-[22px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg rounded-lg flex items-center justify-center gap-3 relative"
             data-testid="btn-karaoke"
           >
-            <Mic className="w-6 h-6" />
+            <Mic className="w-[28px] h-[28px]" />
             Karaoke
             <span className="absolute top-2 right-3 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full leading-5">
               Not synced — tap to sync
@@ -202,16 +202,16 @@ export default function SongPage() {
           </button>
         ) : (
           <Link href={`/song/${song.id}/karaoke`} className="block">
-            <Button size="lg" className="w-full h-24 text-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-karaoke">
-              <Mic className="w-6 h-6" />
+            <Button size="lg" className="w-full h-24 text-[22px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-karaoke">
+              <Mic className="w-[28px] h-[28px]" />
               Karaoke
             </Button>
           </Link>
         )}
 
         <Link href={`/song/${song.id}/exercises`} className="block">
-          <Button size="lg" className="w-full h-24 text-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-exercises">
-            <Brain className="w-6 h-6" />
+          <Button size="lg" className="w-full h-24 text-[22px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg flex items-center justify-center gap-3" data-testid="btn-exercises">
+            <Brain className="w-[28px] h-[28px]" />
             Exercises
           </Button>
         </Link>
