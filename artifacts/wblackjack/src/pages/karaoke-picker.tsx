@@ -13,10 +13,10 @@ const DIFFICULTIES = [10, 33, 100] as const;
 
 const TIER_STACK: KaraokeTier[] = ["perfect", "high", "normal"];
 
-const DIFFICULTY_LABEL: Record<number, string> = {
-  10:  "⚪⚪⚪⚪⚪🟣⚪",
-  33:  "⚪⚪🟣⚪⚪⚪🟣",
-  100: "🟣🟣🟣🟣🟣🟣🟣",
+const DIFFICULTY_PATTERN: Record<number, boolean[]> = {
+  10:  [false, false, false, false, false, true,  false],
+  33:  [false, false, true,  false, false, false, true ],
+  100: [true,  true,  true,  true,  true,  true,  true ],
 };
 
 export default function KaraokePicker() {
@@ -70,8 +70,18 @@ export default function KaraokePicker() {
               data-testid={`btn-diff-${difficulty}`}
             >
               {/* Difficulty label — always centred */}
-              <span className="absolute inset-0 flex items-center justify-center tracking-wide">
-                {DIFFICULTY_LABEL[difficulty]}
+              <span className="absolute inset-0 flex items-center justify-center gap-[5px]">
+                {DIFFICULTY_PATTERN[difficulty].map((filled, i) => (
+                  <span
+                    key={i}
+                    className="inline-block rounded-full flex-shrink-0"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      background: filled ? "#2d0a5e" : "rgba(255,255,255,0.22)",
+                    }}
+                  />
+                ))}
               </span>
 
               {/* Reward stack — 3 fixed equal-height slots, top=perfect, mid=high, bot=normal */}
