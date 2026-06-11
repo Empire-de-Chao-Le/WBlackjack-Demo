@@ -66,7 +66,7 @@ export default function KaraokePicker() {
           <Link key={difficulty} href={`/song/${id}/karaoke/${difficulty}`} className="block">
             <Button
               size="lg"
-              className="w-full h-24 text-2xl font-bold hover:bg-muted border border-border bg-[#8c3cdde6] relative"
+              className="w-full h-24 text-2xl font-bold hover:bg-muted border border-primary-border bg-[#8c3cdde6] relative"
               data-testid={`btn-diff-${difficulty}`}
             >
               {/* Difficulty label — always centred */}
