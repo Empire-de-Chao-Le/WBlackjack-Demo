@@ -402,15 +402,15 @@ export default function FlashcardsGame() {
     if (q.isOriginal) {
       if (correct) setScore((s) => s + 1);
       recordReview(q.entry.id, correct);
+    }
 
-      // Missed an original card → re-show it later this session (new random
-      // direction) so the user practices it again before the session ends.
-      // This is the deliberate exception to the once-per-day pull rule.
-      if (!correct && distractorPool.length >= 4) {
-        const dupType: "tl-en" | "en-tl" = q.type === "tl-en" ? "en-tl" : "tl-en";
-        const dup = buildQuestion(q.entry, dupType, distractorPool, false);
-        setQuestions((qs) => [...qs, dup]);
-      }
+    // Any wrong answer (original OR retry) re-appends the card to the end of
+    // the session so it must be answered correctly before the session can end.
+    // Direction is chosen randomly 50/50 each time.
+    if (!correct && distractorPool.length >= 4) {
+      const dupType: "tl-en" | "en-tl" = Math.random() < 0.5 ? "tl-en" : "en-tl";
+      const dup = buildQuestion(q.entry, dupType, distractorPool, false);
+      setQuestions((qs) => [...qs, dup]);
     }
   };
 
