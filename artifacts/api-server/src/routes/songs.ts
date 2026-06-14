@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, desc, asc, sql, inArray } from "drizzle-orm";
 import { db, songsTable, lyricsTable, timestampsTable, vocabTable, karaokeResultsTable } from "@workspace/db";
+import { notifyTelegram } from "../lib/telegram";
 import {
   ListSongsQueryParams,
   CreateSongBody,
@@ -171,6 +172,7 @@ router.post("/songs", async (req, res): Promise<void> => {
       csvFilename: parsed.data.csvFilename ?? null,
     })
     .returning();
+  notifyTelegram(`🎵 Song added: "${song.title}" by ${song.artist} [${song.language}]`);
   res.status(201).json(buildSongResponse(song, false, false));
 });
 
@@ -334,6 +336,7 @@ router.delete("/songs/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Song not found" });
     return;
   }
+  notifyTelegram(`🗑️ Song deleted: "${song.title}" by ${song.artist} [${song.language}]`);
   res.sendStatus(204);
 });
 
