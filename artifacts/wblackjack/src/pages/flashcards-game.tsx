@@ -180,7 +180,7 @@ function buildQuestion(
   const questionText = type === "tl-en" ? entry.phrase : entry.translation;
   const correctOption = type === "tl-en" ? entry.translation : entry.phrase;
 
-  // Collect up to 3 distractors with UNIQUE values so two options are never identical
+  // Collect up to 4 distractors with UNIQUE values so two options are never identical
   // (duplicate option strings would collide as React keys and leave ghost nodes).
   const distractors: string[] = [];
   const seen = new Set<string>([correctOption]);
@@ -190,7 +190,7 @@ function buildQuestion(
     if (seen.has(val)) continue;
     seen.add(val);
     distractors.push(val);
-    if (distractors.length === 3) break;
+    if (distractors.length === 4) break;
   }
 
   return {
@@ -330,7 +330,7 @@ export default function FlashcardsGame() {
 
   useEffect(() => {
     if (sessionBuilt.current) return;
-    if (pool && pool.length >= 4 && session) {
+    if (pool && pool.length >= 5 && session) {
       sessionBuilt.current = true;
       const ignored = new Set(session.ignoredIds ?? []);
       const dPool = pool.filter((e) => !ignored.has(e.id));
@@ -407,7 +407,7 @@ export default function FlashcardsGame() {
     // Any wrong answer (original OR retry) re-appends the card to the end of
     // the session so it must be answered correctly before the session can end.
     // Direction is chosen randomly 50/50 each time.
-    if (!correct && distractorPool.length >= 4) {
+    if (!correct && distractorPool.length >= 5) {
       const dupType: "tl-en" | "en-tl" = Math.random() < 0.5 ? "tl-en" : "en-tl";
       const dup = buildQuestion(q.entry, dupType, distractorPool, false);
       setQuestions((qs) => [...qs, dup]);
@@ -463,11 +463,11 @@ export default function FlashcardsGame() {
     );
   }
 
-  if (!pool || pool.length < 4) {
+  if (!pool || pool.length < 5) {
     return (
       <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-4 p-6">
         <p className="text-muted-foreground text-center">
-          Not enough words in the {language} pool yet (need at least 4).
+          Not enough words in the {language} pool yet (need at least 5).
         </p>
         <button onClick={goBack} className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors">
           <ArrowLeft className="w-7 h-7" />

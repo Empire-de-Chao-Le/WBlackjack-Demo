@@ -37,7 +37,7 @@ function buildQuestion(entry: PoolEntry, type: "tl-en" | "en-tl", pool: PoolEntr
     if (seen.has(val)) continue;
     seen.add(val);
     distractors.push(val);
-    if (distractors.length === 3) break;
+    if (distractors.length === 4) break;
   }
 
   return {
@@ -95,7 +95,7 @@ export default function InternationalFlashcards() {
 
   useEffect(() => {
     if (sessionBuilt.current) return;
-    if (pool && pool.length >= 4) {
+    if (pool && pool.length >= 5) {
       sessionBuilt.current = true;
       setQuestions(buildSession(pool));
       setCurrentIdx(0);
@@ -164,11 +164,11 @@ export default function InternationalFlashcards() {
   // Exception: if the pool is loaded and genuinely too small, show the
   // error message instead of spinning forever.
   if (questions.length === 0) {
-    if (!isLoading && pool !== undefined && pool.length < 4) {
+    if (!isLoading && pool !== undefined && pool.length < 5) {
       return (
         <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center gap-4 p-6">
           <p className="text-muted-foreground text-center">
-            Not enough words across all languages yet (need at least 4).
+            Not enough words across all languages yet (need at least 5).
           </p>
           <button onClick={goBack} className="p-2 rounded-xl bg-[#8c3cdd] text-white hover:bg-[#7b2fcc] transition-colors">
             <ArrowLeft className="w-7 h-7" />
