@@ -521,6 +521,7 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
       const pos = digit - 1;
       if (kbPhase === "left") {
         if (pos < leftItems.length && !matchedIds.has(leftItems[pos].id)) {
+          speak(leftItems[pos].phrase, songLanguage);
           setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(false);
         }
       } else {
