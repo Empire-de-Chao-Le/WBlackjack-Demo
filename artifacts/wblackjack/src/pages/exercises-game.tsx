@@ -480,7 +480,7 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
   const { leftItems, rightItems } = lesson;
   const [selectedLeftPos, setSelectedLeftPos] = useState<number | null>(null);
   const [matchedIds, setMatchedIds] = useState<Set<number>>(new Set());
-  const [wrongFlash, setWrongFlash] = useState(false);
+  const [wrongFlash, setWrongFlash] = useState<number | null>(null);
   const [kbPhase, setKbPhase] = useState<"left" | "right">("left");
   const allMatched = matchedIds.size === leftItems.length;
   useContinueOnKey(allMatched, onContinue);
@@ -493,7 +493,7 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
   const handleLeftClick = (pos: number) => {
     if (matchedIds.has(leftItems[pos].id)) return;
     speak(leftItems[pos].phrase, songLanguage);
-    setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(false);
+    setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(null);
   };
 
   const handleRightClick = (pos: number) => {
@@ -502,9 +502,9 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
     const rightId = rightItems[pos].id;
     if (leftId === rightId) {
       setMatchedIds((prev) => new Set([...prev, leftId]));
-      setSelectedLeftPos(null); setKbPhase("left"); setWrongFlash(false);
+      setSelectedLeftPos(null); setKbPhase("left"); setWrongFlash(null);
     } else {
-      setWrongFlash(true); setTimeout(() => setWrongFlash(false), 600);
+      setWrongFlash(pos); setTimeout(() => setWrongFlash(null), 600);
     }
   };
 
@@ -522,7 +522,7 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
       if (kbPhase === "left") {
         if (pos < leftItems.length && !matchedIds.has(leftItems[pos].id)) {
           speak(leftItems[pos].phrase, songLanguage);
-          setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(false);
+          setSelectedLeftPos(pos); setKbPhase("right"); setWrongFlash(null);
         }
       } else {
         if (pos < rightItems.length && !matchedIds.has(rightItems[pos].id) && selectedLeftPos !== null) {
@@ -530,9 +530,9 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
           const rightId = rightItems[pos].id;
           if (leftId === rightId) {
             setMatchedIds((prev) => new Set([...prev, leftId]));
-            setSelectedLeftPos(null); setKbPhase("left"); setWrongFlash(false);
+            setSelectedLeftPos(null); setKbPhase("left"); setWrongFlash(null);
           } else {
-            setWrongFlash(true); setTimeout(() => setWrongFlash(false), 600);
+            setWrongFlash(pos); setTimeout(() => setWrongFlash(null), 600);
           }
         }
       }
@@ -548,9 +548,8 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
           {leftItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
             const isSelected = selectedLeftPos === pos;
-            const isWrong = isSelected && wrongFlash;
             return (
-              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-1.5 rounded-full border-2 text-base font-medium transition-all pl-[10px] pr-[10px] pt-[4px] pb-[4px] ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95" : isSelected ? "border-primary bg-primary/20 text-primary cursor-pointer" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
+              <button key={item.id} onClick={() => handleLeftClick(pos)} disabled={isMatched} className={`flex items-center gap-1.5 rounded-full border-2 text-base font-medium transition-all pl-[10px] pr-[10px] pt-[4px] pb-[4px] ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isSelected ? "border-primary bg-primary/20 text-primary cursor-pointer" : "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer"}`} data-testid={`left-${pos}`}>
                 <span className="text-xs text-muted-foreground shrink-0">{pos + 1}</span>
                 <span className="text-[20px]">{item.phrase}</span>
               </button>
@@ -561,8 +560,9 @@ function LessonTypeC({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
         <div className="flex flex-wrap gap-2">
           {rightItems.map((item, pos) => {
             const isMatched = matchedIds.has(item.id);
+            const isWrong = wrongFlash === pos;
             return (
-              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all pl-[10px] pr-[10px] pt-[4px] pb-[4px] ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
+              <button key={item.id} onClick={() => handleRightClick(pos)} disabled={isMatched || selectedLeftPos === null} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 text-base font-medium transition-all pl-[10px] pr-[10px] pt-[4px] pb-[4px] ${isMatched ? "border-green-700/40 bg-green-900/20 text-green-600 line-through cursor-default" : isWrong ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95" : selectedLeftPos !== null ? "border-border bg-card hover:border-primary/40 hover:bg-muted text-foreground cursor-pointer" : "border-border bg-card text-foreground opacity-60 cursor-default"}`} data-testid={`right-${pos}`}>
                 <span className="text-xs text-muted-foreground shrink-0">{pos + 1}</span>
                 <span className="text-[20px]">{item.translation}</span>
               </button>
