@@ -140,7 +140,7 @@ export default function InternationalFlashcards() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (["1", "2", "3", "4"].includes(e.key)) {
+      if (["1", "2", "3", "4", "5"].includes(e.key)) {
         const idx = parseInt(e.key) - 1;
         const q = questionsRef.current[currentIdx];
         if (q && selectedOption === null) {
