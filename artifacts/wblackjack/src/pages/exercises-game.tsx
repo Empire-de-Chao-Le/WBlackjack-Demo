@@ -287,6 +287,20 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
   useEffect(() => { if (correct) speak(lesson.line.original, songLanguage); }, [correct]);
   useEffect(() => { if (gaveUp) setCorrect(true); }, [gaveUp]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === " " || e.key === "Enter") return;
+      if (correct) return;
+      const digit = parseInt(e.key, 10);
+      if (isNaN(digit) || digit < 1) return;
+      const idx = digit - 1;
+      const item = pool[idx];
+      if (item && !item.used) handlePickWord(item.id, item.word);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [pool, correct]);
+
   // Build display order: dragged item removed from source, ghost inserted at dragOverIndex
   const displayItems = useMemo(() => {
     type Item = { word: string; poolId: number; origIdx: number; isGhost: boolean };
@@ -401,17 +415,18 @@ function LessonTypeA({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
         <p className="text-[18px] text-left mt-[0px] mb-[0px]" style={{ color: "#fdb8c8" }}>{lesson.line.translation}</p>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-wrap gap-2 content-start items-start mt-[14px] mb-[14px]" data-testid="word-pool">
-        {pool.map(({ word, id, used }) => (
+        {pool.map(({ word, id, used }, i) => (
           <button
             key={id}
             onClick={() => !used && handlePickWord(id, word)}
-            className={`px-4 py-2.5 rounded-lg border font-medium transition-colors text-[20px] ${
+            className={`relative px-4 py-2.5 rounded-lg border font-medium transition-colors text-[20px] ${
               used
                 ? "bg-muted/30 border-border/30 text-foreground/30 cursor-default"
                 : "bg-muted border-border hover:border-primary/50 hover:bg-muted/70 text-foreground"
             }`}
             data-testid={`pool-word-${id}`}
           >
+            <span className="absolute top-0.5 left-1 text-[10px] leading-none text-muted-foreground/50">{i + 1}</span>
             {word}
           </button>
         ))}
@@ -449,6 +464,19 @@ function LessonTypeB({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
     }
   };
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === " " || e.key === "Enter") return;
+      if (correct) return;
+      const digit = parseInt(e.key, 10);
+      if (isNaN(digit) || digit < 1) return;
+      const idx = digit - 1;
+      if (idx < lesson.options.length) handleSelect(lesson.options[idx]);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [correct]);
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="shrink-0 rounded-xl bg-card border border-border p-4 text-center mb-2">
@@ -458,7 +486,12 @@ function LessonTypeB({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
         {lesson.options.map((opt, i) => {
           const isCorrectSelected = opt === lesson.line.translation && selected === opt;
           const isWrong = wrongFlash === opt;
-          return (<button key={i} onClick={() => handleSelect(opt)} className={`w-full min-h-14 px-5 py-3 rounded-xl border-2 text-left font-medium transition-all text-[19px] ${isCorrectSelected ? "border-green-400 bg-green-400/10 text-green-300" : isWrong ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95" : "border-border bg-card hover:border-primary/50 hover:bg-muted text-[#fdb8c8]"}`} data-testid={`btn-option-${i}`}>{opt}</button>);
+          return (
+            <button key={i} onClick={() => handleSelect(opt)} className={`relative w-full min-h-14 px-5 py-3 rounded-xl border-2 text-left font-medium transition-all text-[19px] ${isCorrectSelected ? "border-green-400 bg-green-400/10 text-green-300" : isWrong ? "border-pink-500 bg-pink-500/10 text-pink-300 scale-95" : "border-border bg-card hover:border-primary/50 hover:bg-muted text-[#fdb8c8]"}`} data-testid={`btn-option-${i}`}>
+              <span className="absolute top-1 left-1.5 text-[10px] leading-none text-muted-foreground/50">{i + 1}</span>
+              {opt}
+            </button>
+          );
         })}
       </div>
       <Button className="shrink-0 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-500/90 text-black disabled:opacity-30 disabled:cursor-not-allowed" onClick={onContinue} disabled={!correct} data-testid="btn-continue">
@@ -650,6 +683,20 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
     }
   };
 
+  useEffect(() => {
+    if (options.length === 0) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === " " || e.key === "Enter") return;
+      if (correct) return;
+      const digit = parseInt(e.key, 10);
+      if (isNaN(digit) || digit < 1) return;
+      const idx = digit - 1;
+      if (idx < options.length) handleSelect(options[idx]);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [options, correct]);
+
   // Render the line with blank or filled word
   const renderedLine = words.map((w, i) => {
     if (i !== blankIndex) return w;
@@ -689,7 +736,7 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
               <button
                 key={i}
                 onClick={() => handleSelect(opt)}
-                className={`w-full min-h-14 px-4 py-3 rounded-xl border-2 font-medium transition-all pl-[10px] pr-[10px] pt-[10px] pb-[10px] text-[20px] ${
+                className={`relative w-full min-h-14 px-4 py-3 rounded-xl border-2 font-medium transition-all pl-[10px] pr-[10px] pt-[10px] pb-[10px] text-[20px] ${
                   isCorrectSelected
                     ? "border-green-400 bg-green-400/10 text-green-300"
                     : isWrong
@@ -698,6 +745,7 @@ function LessonTypeD({ lesson, songLanguage, onContinue, isLast, gaveUp }: {
                 }`}
                 data-testid={`btn-option-${i}`}
               >
+                <span className="absolute top-1 left-1.5 text-[10px] leading-none text-muted-foreground/50">{i + 1}</span>
                 {opt}
               </button>
             );
